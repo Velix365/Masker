@@ -1,0 +1,522 @@
+import streamlit as st
+import pandas as pd
+import re
+import io
+import random
+from faker import Faker
+from openpyxl import load_workbook
+from openpyxl.styles import PatternFill, Font
+import copy
+
+# ─────────────────────────────────────────────
+#  Setup
+# ─────────────────────────────────────────────
+st.set_page_config(page_title="DataMask", page_icon="🔒", layout="wide")
+
+fake_en = Faker('en_GB')
+fake_sv = Faker('sv_SE')
+
+# ─────────────────────────────────────────────
+#  NLP — lazy-loaded spaCy models
+# ─────────────────────────────────────────────
+@st.cache_resource
+def load_nlp_models():
+    import spacy
+    nlp_en = spacy.load("en_core_web_sm")
+    nlp_sv = spacy.load("sv_core_news_sm")
+    return nlp_en, nlp_sv
+
+def detect_lang(text):
+    """Returns 'sv' or 'en' based on text content. Falls back to 'en'."""
+    try:
+        from langdetect import detect
+        result = detect(text)
+        return "sv" if result == "sv" else "en"
+    except Exception:
+        return "en"
+
+def mask_names_ner(text, mask_mode, token_counters, lang, nlp_en, nlp_sv):
+    """
+    Uses spaCy NER to find PERSON entities and mask them.
+    Auto-detects language if lang=='auto', otherwise uses the provided lang.
+    """
+    if len(text.strip()) < 10:
+        return text  # too short to bother with NER
+
+    detected = detect_lang(text) if lang == "auto" else lang
+    nlp = nlp_sv if detected == "sv" else nlp_en
+
+    doc = nlp(text)
+    persons = [(ent.start_char, ent.end_char, ent.text)
+               for ent in doc.ents if ent.label_ == "PER" or ent.label_ == "PERSON"]
+
+    if not persons:
+        return text
+
+    # Replace from end to start so character offsets stay valid
+    result = text
+    for start, end, name in reversed(persons):
+        if mask_mode in ("Asterisks (*****)", "Asterisker (*****)"):
+            replacement = '*' * len(name)
+        elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
+            fake = fake_sv if detected == "sv" else fake_en
+            replacement = fake.name()
+        else:  # Token
+            token_counters["PERSON"] = token_counters.get("PERSON", 0) + 1
+            replacement = f"PERSON_{token_counters['PERSON']:03d}"
+        result = result[:start] + replacement + result[end:]
+
+    return result
+
+# ─────────────────────────────────────────────
+#  UI TRANSLATIONS
+# ─────────────────────────────────────────────
+T = {
+    "en": {
+        "title": "🔒 DataMask — Excel Sensitive Data Cleaner",
+        "subtitle": "Upload an Excel or CSV file. We'll scan it, mask the sensitive data, and give you a clean file to download.",
+        "settings": "⚙️ Settings",
+        "what_to_mask": "What to Mask",
+        "masking_style": "Masking Style",
+        "mask_mode_label": "How should we replace sensitive data?",
+        "mask_modes": ["Asterisks (*****)", "Fake Realistic Data", "Token (e.g. EMAIL_001)"],
+        "nlp_label_sidebar": "Person Names (NLP) ✨",
+        "nlp_header": "Name Detection (NLP)",
+        "nlp_toggle": "Detect person names in free text",
+        "nlp_lang": "Text language",
+        "nlp_lang_opts": ["Auto-detect", "English", "Swedish"],
+        "nlp_caption": "Uses AI (spaCy NER) to find names in long text cells like transcripts. Slower but catches names regex can't.",
+        "tip": "💡 'Fake Realistic Data' keeps your file usable for testing while removing all real personal info.",
+        "upload_label": "📂 Upload your file (.xlsx or .csv)",
+        "upload_help": "Your file never leaves your browser session. Nothing is stored.",
+        "file_loaded": "✅ File loaded: **{name}** — {rows} rows, {cols} columns",
+        "choose_cols": "📋 Choose which columns to scan",
+        "cols_caption": "By default all columns are scanned. Untick any you want to leave untouched.",
+        "cols_label": "Columns to scan:",
+        "preview_label": "👀 Preview Original Data (first 10 rows)",
+        "run_button": "🚀 Run Masking",
+        "warn_no_patterns": "Please select at least one pattern to mask.",
+        "spinner": "Scanning and masking your data...",
+        "done": "✅ Done! **{n}** values were masked across your file.",
+        "original_sample": "🔴 Original (sample)",
+        "masked_sample": "🟢 Masked (sample)",
+        "report_expander": "📊 View Masking Report ({n} changes)",
+        "download_header": "📥 Download Your Clean File",
+        "download_button": "⬇️ Download Masked Excel File",
+        "download_caption": "The downloaded file contains 3 tabs: Original Data, Masked Data, and a Masking Report.",
+        "landing_info": "👈 Upload a file to get started. Use the sidebar to configure what gets masked.",
+        "landing_table_header": "### What does this tool detect?",
+        "landing_table_rows": [
+            ("Person Name (NLP) ✨", "Erik Johansson", "James Smith",        "both"),
+            ("Email",                "john@company.com","fake@email.com",    "both"),
+            ("UK Phone",             "07891 234567",    "07234 567890",      "en"),
+            ("UK Postcode",          "SW1A 1AA",        "M4 3AB",            "en"),
+            ("NI Number",            "AB123456C",       "XY654321D",         "en"),
+            ("Salary (£€$)",         "£45,000",         "£67,000",           "en"),
+            ("Personnummer",         "19850312-1234",   "19920814-5678",     "sv"),
+            ("Swedish Phone",        "070-123 45 67",   "073-456 78 90",     "sv"),
+            ("Swedish Postcode",     "113 45",          "211 56",            "sv"),
+            ("SEK Amount",           "45 000 kr",       "67 000 kr",         "sv"),
+            ("Credit Card",          "4111 1111 1111 1111","5412 7534 2341 9876","both"),
+            ("Date of Birth",        "12/05/1987",      "23/08/1994",        "both"),
+            ("IP Address",           "192.168.1.1",     "83.21.45.7",        "both"),
+        ],
+        "file_error": "Couldn't read that file. Error: {e}",
+    },
+    "sv": {
+        "title": "🔒 DataMask — Rensa känslig data i Excel",
+        "subtitle": "Ladda upp en Excel- eller CSV-fil. Vi skannar den, maskerar känsliga uppgifter och ger dig en ren fil att ladda ner.",
+        "settings": "⚙️ Inställningar",
+        "what_to_mask": "Vad ska maskeras",
+        "masking_style": "Maskeringsstil",
+        "mask_mode_label": "Hur ska vi ersätta känsliga uppgifter?",
+        "mask_modes": ["Asterisker (*****)", "Falsk realistisk data", "Token (t.ex. EMAIL_001)"],
+        "nlp_label_sidebar": "Personnamn (NLP) ✨",
+        "nlp_header": "Namnidentifiering (NLP)",
+        "nlp_toggle": "Identifiera personnamn i fritext",
+        "nlp_lang": "Textspråk",
+        "nlp_lang_opts": ["Identifiera automatiskt", "Engelska", "Svenska"],
+        "nlp_caption": "Använder AI (spaCy NER) för att hitta namn i långa textceller som transkriptioner. Långsammare men hittar namn som regex missar.",
+        "tip": "💡 'Falsk realistisk data' håller filen användbar för testning och tar bort all riktig personlig information.",
+        "upload_label": "📂 Ladda upp din fil (.xlsx eller .csv)",
+        "upload_help": "Din fil lämnar aldrig din webbläsarsession. Ingenting lagras.",
+        "file_loaded": "✅ Fil inläst: **{name}** — {rows} rader, {cols} kolumner",
+        "choose_cols": "📋 Välj vilka kolumner som ska skannas",
+        "cols_caption": "Som standard skannas alla kolumner. Avmarkera de du vill lämna orörda.",
+        "cols_label": "Kolumner att skanna:",
+        "preview_label": "👀 Förhandsgranska originaldata (första 10 raderna)",
+        "run_button": "🚀 Kör maskering",
+        "warn_no_patterns": "Välj minst ett mönster att maskera.",
+        "spinner": "Skannar och maskerar din data...",
+        "done": "✅ Klart! **{n}** värden maskerades i din fil.",
+        "original_sample": "🔴 Original (urval)",
+        "masked_sample": "🟢 Maskerad (urval)",
+        "report_expander": "📊 Visa maskeringsrapport ({n} ändringar)",
+        "download_header": "📥 Ladda ner din rena fil",
+        "download_button": "⬇️ Ladda ner maskerad Excel-fil",
+        "download_caption": "Den nedladdade filen innehåller 3 flikar: Originaldata, Maskerad data och Maskeringsrapport.",
+        "landing_info": "👈 Ladda upp en fil för att komma igång. Använd sidopanelen för att konfigurera vad som maskeras.",
+        "landing_table_header": "### Vad identifierar det här verktyget?",
+        "landing_table_rows": [
+            ("Personnamn (NLP) ✨",  "Erik Johansson",          "Lars Svensson",             "both"),
+            ("E-post",               "kalle@foretag.se",        "falsk@epost.se",             "both"),
+            ("Personnummer",         "19850312-1234",           "19920814-5678",              "sv"),
+            ("Svenskt mobilnummer",  "070-123 45 67",           "073-456 78 90",              "sv"),
+            ("Svenskt postnummer",   "113 45",                  "211 56",                     "sv"),
+            ("SEK-belopp",           "45 000 kr",               "67 000 kr",                  "sv"),
+            ("Brittiskt telefon",    "07891 234567",            "07234 567890",               "en"),
+            ("Brittiskt postnummer", "SW1A 1AA",                "M4 3AB",                     "en"),
+            ("NI-nummer (UK)",       "AB123456C",               "XY654321D",                  "en"),
+            ("Lön (£€$)",            "£45,000",                 "£67,000",                    "en"),
+            ("Kreditkort",           "4111 1111 1111 1111",     "5412 7534 2341 9876",        "both"),
+            ("Födelsedatum",         "12/05/1987",              "23/08/1994",                 "both"),
+            ("IP-adress",            "192.168.1.1",             "83.21.45.7",                 "both"),
+        ],
+        "file_error": "Kunde inte läsa filen. Fel: {e}",
+    },
+}
+
+# ─────────────────────────────────────────────
+#  REGEX PATTERNS — what we scan for
+# ─────────────────────────────────────────────
+PATTERNS = {
+    "Email Addresses":        r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+',
+    "UK Phone Numbers":       r'(\+44\s?|0)7\d{3}[\s-]?\d{6}',
+    "US Phone Numbers":       r'\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}',
+    "UK Postcodes":           r'\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b',
+    "National Insurance":     r'\b[A-Z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-Z]\b',
+    "Swedish Personnummer":   r'\b(19|20)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[-+]?\d{4}\b|\b\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[-+]?\d{4}\b',
+    "Swedish Phone Numbers":  r'(\+46[\s-]?|0)7[02369]\d?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}',
+    "Swedish Postcodes":      r'\b\d{3}\s\d{2}\b',
+    "Credit Card Numbers":    r'\b(?:\d[ -]?){13,16}\b',
+    "Dates of Birth":         r'\b\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b',
+    "IP Addresses":           r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b',
+    "Salary / Currency":      r'£[\d,]+|€[\d,]+|\$[\d,]+',
+    "SEK Currency":           r'\b\d[\d\s]{2,}\s*kr\b',
+}
+
+# Which language each pattern belongs to: 'en', 'sv', or 'both'
+PATTERN_LANG = {
+    "Email Addresses":       "both",
+    "UK Phone Numbers":      "en",
+    "US Phone Numbers":      "en",
+    "UK Postcodes":          "en",
+    "National Insurance":    "en",
+    "Swedish Personnummer":  "sv",
+    "Swedish Phone Numbers": "sv",
+    "Swedish Postcodes":     "sv",
+    "Credit Card Numbers":   "both",
+    "Dates of Birth":        "both",
+    "IP Addresses":          "both",
+    "Salary / Currency":     "en",
+    "SEK Currency":          "sv",
+}
+
+# Bilingual display names for each pattern
+PATTERN_LABELS = {
+    "en": {
+        "Email Addresses":       "Email Addresses",
+        "UK Phone Numbers":      "UK Phone Numbers",
+        "US Phone Numbers":      "US Phone Numbers",
+        "UK Postcodes":          "UK Postcodes",
+        "National Insurance":    "National Insurance (NI)",
+        "Swedish Personnummer":  "Swedish Personnummer",
+        "Swedish Phone Numbers": "Swedish Phone Numbers",
+        "Swedish Postcodes":     "Swedish Postcodes",
+        "Credit Card Numbers":   "Credit Card Numbers",
+        "Dates of Birth":        "Dates of Birth",
+        "IP Addresses":          "IP Addresses",
+        "Salary / Currency":     "Salary / Currency (£€$)",
+        "SEK Currency":          "SEK Currency (kr)",
+    },
+    "sv": {
+        "Email Addresses":       "E-postadresser",
+        "UK Phone Numbers":      "Brittiska telefonnummer",
+        "US Phone Numbers":      "Amerikanska telefonnummer",
+        "UK Postcodes":          "Brittiska postnummer",
+        "National Insurance":    "NI-nummer (UK)",
+        "Swedish Personnummer":  "Personnummer",
+        "Swedish Phone Numbers": "Svenska mobilnummer",
+        "Swedish Postcodes":     "Svenska postnummer",
+        "Credit Card Numbers":   "Kreditkortsnummer",
+        "Dates of Birth":        "Födelsedatum",
+        "IP Addresses":          "IP-adresser",
+        "Salary / Currency":     "Lön / Valuta (£€$)",
+        "SEK Currency":          "SEK-belopp (kr)",
+    },
+}
+
+# ─────────────────────────────────────────────
+#  FAKE DATA REPLACEMENTS
+# ─────────────────────────────────────────────
+def replace_with_fake(category, lang):
+    """Returns realistic fake data for a given category and language."""
+    fake = fake_sv if lang == "sv" else fake_en
+
+    def fake_personnummer():
+        dob = fake_sv.date_of_birth(minimum_age=18, maximum_age=80)
+        last4 = f"{random.randint(1000, 9999)}"
+        return dob.strftime('%Y%m%d') + '-' + last4
+
+    def fake_swedish_phone():
+        prefixes = ['070', '072', '073', '076', '079']
+        prefix = random.choice(prefixes)
+        number = f"{random.randint(100, 999)} {random.randint(10, 99)} {random.randint(10, 99)}"
+        return f"{prefix}-{number}"
+
+    def fake_swedish_postcode():
+        return f"{random.randint(100, 999)} {random.randint(10, 99):02d}"
+
+    def fake_sek():
+        amount = random.randint(10000, 120000)
+        formatted = f"{amount:,}".replace(",", " ")
+        return f"{formatted} kr"
+
+    replacements = {
+        "Email Addresses":       fake.email,
+        "UK Phone Numbers":      fake_en.phone_number,
+        "US Phone Numbers":      fake_en.phone_number,
+        "UK Postcodes":          fake_en.postcode,
+        "National Insurance":    lambda: f"{fake_en.lexify('??').upper()}{fake_en.numerify('######')}{fake_en.lexify('?').upper()}",
+        "Swedish Personnummer":  fake_personnummer,
+        "Swedish Phone Numbers": fake_swedish_phone,
+        "Swedish Postcodes":     fake_swedish_postcode,
+        "Credit Card Numbers":   lambda: fake.credit_card_number(card_type=None),
+        "Dates of Birth":        lambda: fake.date_of_birth(minimum_age=18, maximum_age=80).strftime('%d/%m/%Y'),
+        "IP Addresses":          fake.ipv4,
+        "Salary / Currency":     lambda: f"£{fake_en.random_int(20000, 120000):,}",
+        "SEK Currency":          fake_sek,
+    }
+    fn = replacements.get(category)
+    return fn() if fn else "****"
+
+# ─────────────────────────────────────────────
+#  CORE MASKING LOGIC
+# ─────────────────────────────────────────────
+def mask_cell(value, selected_patterns, mask_mode, token_counters, lang,
+              use_nlp=False, nlp_lang="auto", nlp_en=None, nlp_sv=None):
+    text = str(value)
+    for category, pattern in PATTERNS.items():
+        if category not in selected_patterns:
+            continue
+        if mask_mode in ("Asterisks (*****)", "Asterisker (*****)"):
+            text = re.sub(pattern, lambda m: '*' * len(m.group()), text)
+        elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
+            text = re.sub(pattern, lambda m, c=category: replace_with_fake(c, lang), text)
+        elif mask_mode in ("Token (e.g. EMAIL_001)", "Token (t.ex. EMAIL_001)"):
+            def token_replace(m, c=category):
+                key = c.replace(" ", "_").upper()
+                token_counters[key] = token_counters.get(key, 0) + 1
+                return f"{key}_{token_counters[key]:03d}"
+            text = re.sub(pattern, token_replace, text)
+
+    if use_nlp and nlp_en and nlp_sv:
+        text = mask_names_ner(text, mask_mode, token_counters, nlp_lang, nlp_en, nlp_sv)
+
+    return text
+
+
+def process_dataframe(df, selected_patterns, mask_mode, selected_columns, lang,
+                      use_nlp=False, nlp_lang="auto"):
+    """Applies masking to a dataframe. Returns masked df + a report."""
+    masked_df = df.copy()
+    token_counters = {}
+    report = []
+
+    nlp_en, nlp_sv = (load_nlp_models() if use_nlp else (None, None))
+
+    cols_to_process = selected_columns if selected_columns else df.columns.tolist()
+
+    for col in cols_to_process:
+        if col not in df.columns:
+            continue
+        for idx, value in df[col].items():
+            if pd.isna(value):
+                continue
+            original = str(value)
+            cleaned = mask_cell(
+                original, selected_patterns, mask_mode, token_counters, lang,
+                use_nlp=use_nlp, nlp_lang=nlp_lang, nlp_en=nlp_en, nlp_sv=nlp_sv
+            )
+            if cleaned != original:
+                masked_df.at[idx, col] = cleaned
+                report.append({
+                    "Row": idx + 2,
+                    "Column": col,
+                    "Original": original,
+                    "Masked As": cleaned,
+                })
+
+    return masked_df, pd.DataFrame(report)
+
+
+# ─────────────────────────────────────────────
+#  EXPORT TO EXCEL (with three tabs)
+# ─────────────────────────────────────────────
+def export_to_excel(original_df, masked_df, report_df):
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        original_df.to_excel(writer, sheet_name='Original Data', index=False)
+        masked_df.to_excel(writer, sheet_name='Masked Data', index=False)
+        if not report_df.empty:
+            report_df.to_excel(writer, sheet_name='Masking Report', index=False)
+
+        wb = writer.book
+        ws = wb['Masked Data']
+        green_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+        for cell in ws[1]:
+            cell.fill = green_fill
+            cell.font = Font(bold=True)
+
+    output.seek(0)
+    return output
+
+
+# ─────────────────────────────────────────────
+#  UI — STREAMLIT INTERFACE
+# ─────────────────────────────────────────────
+
+# Language selector at top of sidebar
+with st.sidebar:
+    lang = st.radio(
+        "Language / Språk",
+        options=["en", "sv"],
+        format_func=lambda x: "🇬🇧 English" if x == "en" else "🇸🇪 Svenska",
+        horizontal=True,
+    )
+
+ui = T[lang]
+labels = PATTERN_LABELS[lang]
+
+st.title(ui["title"])
+st.markdown(ui["subtitle"])
+st.divider()
+
+with st.sidebar:
+    st.header(ui["settings"])
+
+    st.subheader(ui["what_to_mask"])
+    selected_patterns = []
+    for category in PATTERNS:
+        if PATTERN_LANG[category] not in (lang, "both"):
+            continue
+        if st.checkbox(labels[category], value=True, key=f"chk_{category}"):
+            selected_patterns.append(category)
+    use_nlp_quick = st.checkbox(ui["nlp_label_sidebar"], value=False, key="nlp_quick")
+
+    st.subheader(ui["masking_style"])
+    mask_mode = st.radio(
+        ui["mask_mode_label"],
+        ui["mask_modes"],
+        index=1,
+    )
+
+    st.divider()
+    st.subheader(ui["nlp_header"])
+    use_nlp = st.toggle(ui["nlp_toggle"], value=use_nlp_quick)
+    if use_nlp:
+        nlp_lang_choice = st.radio(
+            ui["nlp_lang"],
+            ui["nlp_lang_opts"],
+            index=0,
+        )
+        st.caption(ui["nlp_caption"])
+    else:
+        nlp_lang_choice = None
+
+    st.divider()
+    st.caption(ui["tip"])
+
+# --- File Upload ---
+uploaded_file = st.file_uploader(
+    ui["upload_label"],
+    type=["xlsx", "csv"],
+    help=ui["upload_help"],
+)
+
+if uploaded_file:
+    try:
+        if uploaded_file.name.endswith(".csv"):
+            df = pd.read_csv(uploaded_file)
+        else:
+            df = pd.read_excel(uploaded_file)
+    except Exception as e:
+        st.error(ui["file_error"].format(e=e))
+        st.stop()
+
+    st.success(ui["file_loaded"].format(name=uploaded_file.name, rows=len(df), cols=len(df.columns)))
+    st.divider()
+
+    st.subheader(ui["choose_cols"])
+    st.caption(ui["cols_caption"])
+    all_cols = df.columns.tolist()
+    selected_columns = st.multiselect(
+        ui["cols_label"],
+        options=all_cols,
+        default=all_cols,
+    )
+
+    with st.expander(ui["preview_label"]):
+        st.dataframe(df.head(10), use_container_width=True)
+
+    st.divider()
+
+    if st.button(ui["run_button"], type="primary", use_container_width=True):
+        if not selected_patterns:
+            st.warning(ui["warn_no_patterns"])
+        else:
+            # Map UI language choice to internal code
+            nlp_lang_map_en = {"Auto-detect": "auto", "English": "en", "Swedish": "sv"}
+            nlp_lang_map_sv = {"Identifiera automatiskt": "auto", "Engelska": "en", "Svenska": "sv"}
+            nlp_lang_map = nlp_lang_map_sv if lang == "sv" else nlp_lang_map_en
+            nlp_lang_code = nlp_lang_map.get(nlp_lang_choice, "auto") if nlp_lang_choice else "auto"
+
+            with st.spinner(ui["spinner"]):
+                masked_df, report_df = process_dataframe(
+                    df, selected_patterns, mask_mode, selected_columns, lang,
+                    use_nlp=use_nlp, nlp_lang=nlp_lang_code
+                )
+
+            st.success(ui["done"].format(n=len(report_df)))
+            st.divider()
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader(ui["original_sample"])
+                st.dataframe(df.head(10), use_container_width=True)
+            with col2:
+                st.subheader(ui["masked_sample"])
+                st.dataframe(masked_df.head(10), use_container_width=True)
+
+            if not report_df.empty:
+                with st.expander(ui["report_expander"].format(n=len(report_df))):
+                    st.dataframe(report_df, use_container_width=True)
+
+            st.divider()
+
+            st.subheader(ui["download_header"])
+            excel_output = export_to_excel(df, masked_df, report_df)
+            original_name = uploaded_file.name.replace('.xlsx', '').replace('.csv', '')
+
+            st.download_button(
+                label=ui["download_button"],
+                data=excel_output,
+                file_name=f"{original_name}_MASKED.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                type="primary",
+            )
+            st.caption(ui["download_caption"])
+
+else:
+    st.info(ui["landing_info"])
+    st.markdown(ui["landing_table_header"])
+    col_header = "Type" if lang == "en" else "Typ"
+    ex_header  = "Example" if lang == "en" else "Exempel"
+    as_header  = "Masked As" if lang == "en" else "Maskeras som"
+    rows = ui["landing_table_rows"]
+    table_md = f"| {col_header} | {ex_header} | {as_header} |\n|---|---|---|\n"
+    for label, example, masked, row_lang in rows:
+        if row_lang in (lang, "both"):
+            table_md += f"| {label} | {example} | {masked} |\n"
+    st.markdown(table_md)

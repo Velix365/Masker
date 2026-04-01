@@ -48,23 +48,10 @@ T = {
         "download_caption": "The downloaded file contains 3 tabs: Original Data, Masked Data, and a Masking Report.",
         "landing_info": "👈 Upload a file to get started. Use the sidebar to configure what gets masked.",
         "landing_table_header": "### What does this tool detect?",
-        "landing_table": """
-| Type | Example | Masked As |
-|---|---|---|
-| Email | john@company.com | fake@email.com |
-| Phone (UK) | 07891 234567 | 07234 567890 |
-| Phone (SWE) | 070-123 45 67 | 073-456 78 90 |
-| Postcode (UK) | SW1A 1AA | M4 3AB |
-| Postcode (SWE) | 113 45 | 211 56 |
-| NI Number | AB123456C | XY654321D |
-| Personnummer | 19850312-1234 | 19920814-5678 |
-| Salary | £45,000 | £67,000 |
-| SEK Amount | 45 000 kr | 67 000 kr |
-| Credit Card | 4111 1111 1111 1111 | 5412 7534 2341 9876 |
-| Date of Birth | 12/05/1987 | 23/08/1994 |
-| IP Address | 192.168.1.1 | 83.21.45.7 |
-""",
-        "file_error": "Couldn't read that file. Error: {e}",
+        "landing_col_type": "Type",
+        "landing_col_example": "Example",
+        "landing_col_masked": "Masked As",
+        "file_error": "Couldn't read that file. Error: {e}",    
     },
     "sv": {
         "title": "🔒 Velix — Rensa känslig data i Excel",
@@ -93,23 +80,9 @@ T = {
         "download_button": "⬇️ Ladda ner maskerad Excel-fil",
         "download_caption": "Den nedladdade filen innehåller 3 flikar: Originaldata, Maskerad data och Maskeringsrapport.",
         "landing_info": "👈 Ladda upp en fil för att komma igång. Använd sidopanelen för att konfigurera vad som maskeras.",
-        "landing_table_header": "### Vad identifierar det här verktyget?",
-        "landing_table": """
-| Typ | Exempel | Maskeras som |
-|---|---|---|
-| E-post | kalle@foretag.se | falsk@epost.se |
-| Brittiskt telefonnummer | 07891 234567 | 07234 567890 |
-| Svenskt mobilnummer | 070-123 45 67 | 073-456 78 90 |
-| Brittiskt postnummer | SW1A 1AA | M4 3AB |
-| Svenskt postnummer | 113 45 | 211 56 |
-| NI-nummer (UK) | AB123456C | XY654321D |
-| Personnummer | 19850312-1234 | 19920814-5678 |
-| Lön (£€$) | £45,000 | £67,000 |
-| SEK-belopp | 45 000 kr | 67 000 kr |
-| Kreditkort | 4111 1111 1111 1111 | 5412 7534 2341 9876 |
-| Födelsedatum | 12/05/1987 | 23/08/1994 |
-| IP-adress | 192.168.1.1 | 83.21.45.7 |
-""",
+        "landing_col_type": "Typ",
+        "landing_col_example": "Exempel",
+        "landing_col_masked": "Maskeras som",
         "file_error": "Kunde inte läsa filen. Fel: {e}",
     },
 }
@@ -400,7 +373,7 @@ with st.sidebar:
     mask_mode = st.radio(
         ui["mask_mode_label"],
         ui["mask_modes"],
-        index=1,
+        index=0,
     )
  
     st.divider()
@@ -518,4 +491,46 @@ if uploaded_file:
 else:
     st.info(ui["landing_info"])
     st.markdown(ui["landing_table_header"])
-    st.markdown(ui["landing_table"])
+ 
+    # Dynamic landing table that reflects the selected masking mode
+    EXAMPLE_DATA = [
+        ("Email Addresses",       "Email",            "E-post",                   "john@company.com",        "kalle@foretag.se"),
+        ("UK Phone Numbers",      "Phone (UK)",       "Brittiskt telefonnr",      "07891 234567",            "07891 234567"),
+        ("Swedish Phone Numbers", "Phone (SWE)",      "Svenskt mobilnr",         "070-123 45 67",           "070-123 45 67"),
+        ("UK Postcodes",          "Postcode (UK)",    "Brittiskt postnr",         "SW1A 1AA",                "SW1A 1AA"),
+        ("Swedish Postcodes",     "Postcode (SWE)",   "Svenskt postnr",          "113 45",                  "113 45"),
+        ("National Insurance",    "NI Number",        "NI-nummer (UK)",           "AB123456C",               "AB123456C"),
+        ("Swedish Personnummer",  "Personnummer",     "Personnummer",             "19850312-1234",           "19850312-1234"),
+        ("Salary / Currency",     "Salary",           "Lön",                      "£45,000",                 "£45,000"),
+        ("SEK Currency",          "SEK Amount",       "SEK-belopp",              "45 000 kr",               "45 000 kr"),
+        ("Credit Card Numbers",   "Credit Card",      "Kreditkort",              "4111 1111 1111 1111",     "4111 1111 1111 1111"),
+        ("Dates of Birth",        "Date of Birth",    "Födelsedatum",            "12/05/1987",              "12/05/1987"),
+        ("IP Addresses",          "IP Address",       "IP-adress",               "192.168.1.1",             "192.168.1.1"),
+    ]
+ 
+    get_fake_landing = build_fake_generator(lang)
+    token_counters_landing = {}
+ 
+    col_type = ui["landing_col_type"]
+    col_ex   = ui["landing_col_example"]
+    col_mask = ui["landing_col_masked"]
+ 
+    table = f"| {col_type} | {col_ex} | {col_mask} |\n|---|---|---|\n"
+    for category, label_en, label_sv, example_en, example_sv in EXAMPLE_DATA:
+        label   = label_sv if lang == "sv" else label_en
+        example = example_sv if lang == "sv" else example_en
+ 
+        if mask_mode in ("Asterisks (*****)", "Asterisker (*****)"):
+            masked = "*" * len(example)
+        elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
+            masked = get_fake_landing(category, example)
+        elif mask_mode in ("Token (e.g. EMAIL_001)", "Token (t.ex. EMAIL_001)"):
+            key = category.replace(" ", "_").upper()
+            token_counters_landing[key] = token_counters_landing.get(key, 0) + 1
+            masked = f"{key}_{token_counters_landing[key]:03d}"
+        else:
+            masked = "*" * len(example)
+ 
+        table += f"| {label} | `{example}` | `{masked}` |\n"
+ 
+    st.markdown(table)

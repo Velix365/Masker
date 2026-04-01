@@ -80,6 +80,7 @@ T = {
         "download_button": "⬇️ Ladda ner maskerad Excel-fil",
         "download_caption": "Den nedladdade filen innehåller 3 flikar: Originaldata, Maskerad data och Maskeringsrapport.",
         "landing_info": "👈 Ladda upp en fil för att komma igång. Använd sidopanelen för att konfigurera vad som maskeras.",
+        "landing_table_header": "### Vad identifierar det här verktyget?",
         "landing_col_type": "Typ",
         "landing_col_example": "Exempel",
         "landing_col_masked": "Maskeras som",

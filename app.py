@@ -203,18 +203,18 @@ T = {
 PATTERNS = {
     "Person Names (NLP)":     None,  # Special case - handled by NER, not regex
     "Email Addresses":        r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+',
-    "UK Phone Numbers":       r'\b(?:\+44\s?|0)7\d{3}[\s-]?\d{3}[\s-]?\d{3}\b|\b(?:\+44\s?|0)7\d{3}[\s-]?\d{6}\b',
+    "UK Phone Numbers":       r'(?:\+44\s?|0)7\d{3}[\s-]?\d{3}[\s-]?\d{3}|(?:\+44\s?|0)7\d{3}[\s-]?\d{6}',
     "US Phone Numbers":       r'\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}',
-    "UK Postcodes":           r'\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b',
-    "National Insurance":     r'\b[A-Z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-Z]\b',
-    "Swedish Personnummer":   r'\b(?:19|20)?\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])[-\s]?\d{4}\b',
-    "Swedish Phone Numbers":  r'\b(?:\+46[\s-]?|0)7[0-9][\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}\b',
-    "Swedish Postcodes":      r'\b\d{3}\s?\d{2}\b',
-    "Credit Card Numbers":    r'\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b',
-    "Dates of Birth":         r'\b\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b',
-    "IP Addresses":           r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b',
-    "Salary / Currency":      r'[£€$]\s?\d{1,3}(?:,\d{3})*(?:\.\d{2})?',
-    "SEK Currency":           r'\b\d{1,3}(?:[\s]\d{3})*\s*kr\b',
+    "UK Postcodes":           r'[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}',
+    "National Insurance":     r'[A-Z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-Z]',
+    "Swedish Personnummer":   r'(?:19|20)?\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])[-\s]?\d{4}',
+    "Swedish Phone Numbers":  r'(?:\+46[\s-]?|0)?7[0-9][\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}',
+    "Swedish Postcodes":      r'\d{3}\s?\d{2}',
+    "Credit Card Numbers":    r'\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}',
+    "Dates of Birth":         r'\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}',
+    "IP Addresses":           r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}',
+    "Salary / Currency":      r'[£€$]\s?\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?',
+    "SEK Currency":           r'\d{1,3}(?:\s\d{3})+\s*kr',
 }
 
 # Which language each pattern belongs to: 'en', 'sv', or 'both'

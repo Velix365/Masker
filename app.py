@@ -221,18 +221,18 @@ PATTERNS = {
 PATTERN_LANG = {
     "Person Names (NLP)":    "both",
     "Email Addresses":       "both",
-    "UK Phone Numbers":      "en",
-    "US Phone Numbers":      "en",
-    "UK Postcodes":          "en",
-    "National Insurance":    "en",
-    "Swedish Personnummer":  "sv",
-    "Swedish Phone Numbers": "sv",
-    "Swedish Postcodes":     "sv",
+    "UK Phone Numbers":      "both",
+    "US Phone Numbers":      "both",
+    "UK Postcodes":          "both",
+    "National Insurance":    "both",
+    "Swedish Personnummer":  "both",
+    "Swedish Phone Numbers": "both",
+    "Swedish Postcodes":     "both",
     "Credit Card Numbers":   "both",
     "Dates of Birth":        "both",
     "IP Addresses":          "both",
-    "Salary / Currency":     "en",
-    "SEK Currency":          "sv",
+    "Salary / Currency":     "both",
+    "SEK Currency":          "both",
 }
 
 # Bilingual display names for each pattern

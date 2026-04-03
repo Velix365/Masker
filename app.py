@@ -931,8 +931,8 @@ def mask_names_ner(text, mask_mode, token_counters, lang, nlp_en, nlp_sv):
     persons = sorted(persons_found, key=lambda x: x[0], reverse=True)
     result = text
     for start, end, name in persons:
-        if mask_mode in ("Asterisks (*****)", "Asterisker (*****)"):
-            replacement = '*' * len(name)
+        if mask_mode in ("Redacted (●●●●●)", "Maskerad (●●●●●)"):
+            replacement = '●' * len(name)
         elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
             fake = fake_sv if any(c in name.lower() for c in ['å', 'ä', 'ö']) else fake_en
             replacement = fake.name()
@@ -955,7 +955,7 @@ T = {
         "what_to_mask": "Detection Rules",
         "masking_style": "Output Style",
         "mask_mode_label": "How should we replace sensitive data?",
-        "mask_modes": ["Asterisks (*****)", "Fake Realistic Data", "Token (e.g. EMAIL_001)"],
+        "mask_modes": ["Redacted (●●●●●)", "Fake Realistic Data", "Token (e.g. EMAIL_001)"],
         "tip": "💡 **Tip:** 'Fake Realistic Data' keeps your file usable for testing while removing all real personal info.\n\n✨ Person names are auto-detected using AI (spaCy NER) in both English and Swedish.",
         "upload_label": "Upload your file (.xlsx or .csv)",
         "upload_help": "Your file never leaves your browser session. Nothing is stored.",
@@ -1014,7 +1014,7 @@ T = {
         "what_to_mask": "Detektionsregler",
         "masking_style": "Utdatastil",
         "mask_mode_label": "Hur ska känsliga uppgifter ersättas?",
-        "mask_modes": ["Asterisker (*****)", "Falsk realistisk data", "Token (t.ex. EMAIL_001)"],
+        "mask_modes": ["Maskerad (●●●●●)", "Falsk realistisk data", "Token (t.ex. EMAIL_001)"],
         "tip": "💡 **Tips:** 'Falsk realistisk data' håller filen användbar för testning.\n\n✨ Personnamn identifieras automatiskt med AI (spaCy NER) på engelska och svenska.",
         "upload_label": "Ladda upp din fil (.xlsx eller .csv)",
         "upload_help": "Din fil lämnar aldrig webbläsaren. Ingenting lagras.",
@@ -1185,8 +1185,8 @@ def mask_cell(value, selected_patterns, mask_mode, token_counters, lang,
         if category == "Person Names (NLP)":
             continue
 
-        if mask_mode in ("Asterisks (*****)", "Asterisker (*****)"):
-            text = re.sub(pattern, lambda m: '*' * len(m.group()), text)
+        if mask_mode in ("Redacted (●●●●●)", "Maskerad (●●●●●)"):
+            text = re.sub(pattern, lambda m: '●' * len(m.group()), text)
         elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
             text = re.sub(pattern, lambda m, c=category: replace_with_fake(c, lang), text)
         elif mask_mode in ("Token (e.g. EMAIL_001)", "Token (t.ex. EMAIL_001)"):
@@ -1470,8 +1470,8 @@ else:
         if row_lang in (lang, "both"):
             category = label_to_category.get(label)
             if category == "PERSON":
-                if mask_mode in ("Asterisks (*****)", "Asterisker (*****)"):
-                    masked_example = '*' * len(example)
+                if mask_mode in ("Redacted (●●●●●)", "Maskerad (●●●●●)"):
+                    masked_example = '●' * len(example)
                 elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
                     fake = fake_sv if lang == "sv" else fake_en
                     masked_example = fake.name()

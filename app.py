@@ -359,56 +359,27 @@ p, span, li, div, label {
 }
 
 /* ══════════════════════════════════════════════
-   FILE UPLOADER
+   FILE UPLOADER — FIX TEXT OVERLAP
    ══════════════════════════════════════════════ */
-[data-testid="stFileUploader"] {
-    background: var(--bg-card) !important;
-    border: 2px dashed rgba(56, 189, 248, 0.2) !important;
-    border-radius: 14px !important;
-    padding: 2rem !important;
-    transition: all 0.35s ease !important;
-    animation: scaleIn 0.6s ease-out 0.4s both;
-}
 
-[data-testid="stFileUploader"]:hover {
-    border-color: var(--accent-cyan) !important;
-    background: var(--bg-card-hover) !important;
-    box-shadow: 0 0 30px rgba(56, 189, 248, 0.08) !important;
-}
-
-[data-testid="stFileUploader"] section {
-    background: transparent !important;
-}
-
-[data-testid="stFileUploader"] button {
-    background: var(--bg-input) !important;
-    color: var(--text-primary) !important;
-    border: 1px solid var(--border-subtle) !important;
-    border-radius: 8px !important;
-}
-
-[data-testid="stFileUploader"] small {
-    color: var(--text-muted) !important;
-}
-
-
-/* FIX — remove duplicate upload label */
-[data-testid="stFileUploader"] label {
+/* Hide the accessibility label text only */
+[data-testid="stFileUploader"] > label {
     display: none !important;
 }
 
-/* FIX — prevent layout stacking */
+/* Keep layout clean */
 [data-testid="stFileUploader"] section {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.6rem;
+    justify-content: center;
+    gap: 0.5rem;
 }
 
-/* FIX — consistent button sizing */
+/* Ensure button sits centered */
 [data-testid="stFileUploader"] button {
-    min-height: 40px;
-    padding: 0.5rem 1rem !important;
+    min-height: 42px;
+    padding: 0.55rem 1.2rem !important;
 }
 /* ══════════════════════════════════════════════
    DATA TABLES & DATAFRAMES

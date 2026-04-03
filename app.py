@@ -359,15 +359,20 @@ p, span, li, div, label {
 }
 
 /* ══════════════════════════════════════════════
-   FILE UPLOADER — FIX TEXT OVERLAP
+   FILE UPLOADER — FIXED OVERLAP
    ══════════════════════════════════════════════ */
-
-/* Hide the accessibility label text only */
-[data-testid="stFileUploader"] > label {
-    display: none !important;
+[data-testid="stFileUploader"] {
+    background: var(--bg-card) !important;
+    border: 1px dashed var(--border-accent) !important;
+    border-radius: 14px !important;
+    padding: 1.5rem !important;
 }
 
-/* Keep layout clean */
+[data-testid="stFileUploader"] > label > div > p {
+    color: var(--text-secondary) !important;
+    font-size: 0.95rem !important;
+}
+
 [data-testid="stFileUploader"] section {
     display: flex;
     flex-direction: column;
@@ -376,13 +381,18 @@ p, span, li, div, label {
     gap: 0.5rem;
 }
 
-/* Ensure button sits centered */
+[data-testid="stFileUploader"] section > span {
+    color: var(--text-muted) !important;
+    font-size: 0.82rem !important;
+}
+
 [data-testid="stFileUploader"] button {
     min-height: 42px;
     padding: 0.55rem 1.2rem !important;
 }
+
 /* ══════════════════════════════════════════════
-   DATA TABLES & DATAFRAMES
+   DATA TABLES & DATAFRAMES — DARK THEME FIX
    ══════════════════════════════════════════════ */
 [data-testid="stDataFrame"],
 .stDataFrame {
@@ -394,6 +404,32 @@ p, span, li, div, label {
     background: var(--bg-card) !important;
     border: 1px solid var(--border-subtle) !important;
     border-radius: 10px !important;
+}
+
+/* Force dataframe cell text to be visible */
+[data-testid="stDataFrame"] canvas {
+    opacity: 1 !important;
+}
+
+[data-testid="stDataFrame"] [role="gridcell"],
+[data-testid="stDataFrame"] [data-testid="glideDataEditor"] * {
+    color: var(--text-primary) !important;
+}
+
+/* Ensure Glide Data Grid renders with visible colors */
+[data-testid="stDataFrame"] .gdg-style,
+[data-testid="stDataFrame"] .dvn-scroller,
+[data-testid="stDataFrame"] [data-testid="glideDataEditor"] {
+    --gdg-bg-cell: #1A1F2E !important;
+    --gdg-bg-header: #151A28 !important;
+    --gdg-text-dark: #F1F5F9 !important;
+    --gdg-text-medium: #94A3B8 !important;
+    --gdg-text-light: #64748B !important;
+    --gdg-border-color: rgba(255,255,255,0.06) !important;
+    --gdg-bg-header-has-focus: #212840 !important;
+    --gdg-bg-cell-medium: #212840 !important;
+    --gdg-accent-color: #38BDF8 !important;
+    --gdg-accent-light: rgba(56, 189, 248, 0.15) !important;
 }
 
 /* ══════════════════════════════════════════════
@@ -842,7 +878,7 @@ def mask_names_ner(text, mask_mode, token_counters, lang, nlp_en, nlp_sv):
 
 
 # ─────────────────────────────────────────────
-#  UI TRANSLATIONS
+#  UI TRANSLATIONS  (emojis removed from section headers)
 # ─────────────────────────────────────────────
 T = {
     "en": {
@@ -854,21 +890,21 @@ T = {
         "mask_mode_label": "How should we replace sensitive data?",
         "mask_modes": ["Asterisks (*****)", "Fake Realistic Data", "Token (e.g. EMAIL_001)"],
         "tip": "💡 **Tip:** 'Fake Realistic Data' keeps your file usable for testing while removing all real personal info.\n\n✨ Person names are auto-detected using AI (spaCy NER) in both English and Swedish.",
-        "upload_label": "📂 Upload your file (.xlsx or .csv)",
+        "upload_label": "Upload your file (.xlsx or .csv)",
         "upload_help": "Your file never leaves your browser session. Nothing is stored.",
         "file_loaded": "✅ File loaded: **{name}** — {rows} rows, {cols} columns",
-        "choose_cols": "📋 Choose columns to scan",
+        "choose_cols": "Choose columns to scan",
         "cols_caption": "All columns are scanned by default. Untick any you want to skip.",
         "cols_label": "Columns to scan:",
-        "preview_label": "👀 Preview original data (first 10 rows)",
+        "preview_label": "Preview original data (first 10 rows)",
         "run_button": "Run Masking",
         "warn_no_patterns": "Please select at least one pattern to mask.",
         "spinner": "Scanning and masking your data…",
         "done": "✅ Done — **{n}** values masked across your file.",
         "original_sample": "🔴 Original",
         "masked_sample": "🟢 Masked",
-        "report_expander": "📊 Masking Report — {n} changes",
-        "download_header": "📥 Download",
+        "report_expander": "Masking Report — {n} changes",
+        "download_header": "Download",
         "download_button": "⬇️ Download Masked Excel",
         "download_caption": "Contains 3 tabs: Original Data, Masked Data, and Masking Report.",
         "landing_info": "Upload a file to get started →",
@@ -913,21 +949,21 @@ T = {
         "mask_mode_label": "Hur ska känsliga uppgifter ersättas?",
         "mask_modes": ["Asterisker (*****)", "Falsk realistisk data", "Token (t.ex. EMAIL_001)"],
         "tip": "💡 **Tips:** 'Falsk realistisk data' håller filen användbar för testning.\n\n✨ Personnamn identifieras automatiskt med AI (spaCy NER) på engelska och svenska.",
-        "upload_label": "📂 Ladda upp din fil (.xlsx eller .csv)",
+        "upload_label": "Ladda upp din fil (.xlsx eller .csv)",
         "upload_help": "Din fil lämnar aldrig webbläsaren. Ingenting lagras.",
         "file_loaded": "✅ Inläst: **{name}** — {rows} rader, {cols} kolumner",
-        "choose_cols": "📋 Välj kolumner att skanna",
+        "choose_cols": "Välj kolumner att skanna",
         "cols_caption": "Alla kolumner skannas som standard. Avmarkera de du vill hoppa över.",
         "cols_label": "Kolumner att skanna:",
-        "preview_label": "👀 Förhandsgranska (första 10 raderna)",
+        "preview_label": "Förhandsgranska (första 10 raderna)",
         "run_button": "Kör maskering",
         "warn_no_patterns": "Välj minst ett mönster.",
         "spinner": "Skannar och maskerar…",
         "done": "✅ Klart — **{n}** värden maskerades.",
         "original_sample": "🔴 Original",
         "masked_sample": "🟢 Maskerad",
-        "report_expander": "📊 Maskeringsrapport — {n} ändringar",
-        "download_header": "📥 Ladda ner",
+        "report_expander": "Maskeringsrapport — {n} ändringar",
+        "download_header": "Ladda ner",
         "download_button": "⬇️ Ladda ner maskerad Excel",
         "download_caption": "Filen har 3 flikar: Originaldata, Maskerad data och Rapport.",
         "landing_info": "Ladda upp en fil för att börja →",
@@ -1232,6 +1268,7 @@ uploaded_file = st.file_uploader(
     ui["upload_label"],
     type=["xlsx", "csv"],
     help=ui["upload_help"],
+    label_visibility="visible",
 )
 
 if uploaded_file:
@@ -1256,8 +1293,8 @@ if uploaded_file:
         default=all_cols,
     )
 
-    with st.expander(ui["preview_label"]):
-        st.dataframe(df.head(10), use_container_width=True)
+    with st.expander(ui["preview_label"], expanded=False):
+        st.dataframe(df.head(10), use_container_width=True, height=400)
 
     st.divider()
 
@@ -1286,14 +1323,14 @@ if uploaded_file:
         col1, col2 = st.columns(2)
         with col1:
             st.subheader(ui["original_sample"])
-            st.dataframe(st.session_state.original_df.head(10), use_container_width=True)
+            st.dataframe(st.session_state.original_df.head(10), use_container_width=True, height=400)
         with col2:
             st.subheader(ui["masked_sample"])
-            st.dataframe(st.session_state.masked_df.head(10), use_container_width=True)
+            st.dataframe(st.session_state.masked_df.head(10), use_container_width=True, height=400)
 
         if not st.session_state.report_df.empty:
             with st.expander(ui["report_expander"].format(n=len(st.session_state.report_df))):
-                st.dataframe(st.session_state.report_df, use_container_width=True)
+                st.dataframe(st.session_state.report_df, use_container_width=True, height=400)
 
         st.divider()
         st.subheader(ui["download_header"])

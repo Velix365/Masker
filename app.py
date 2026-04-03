@@ -422,7 +422,17 @@ with st.sidebar:
         ui["mask_mode_label"],
         ui["mask_modes"],
         index=1,
+        key="mask_mode_radio"
     )
+
+    # Clear results when mask mode changes
+    if 'previous_mask_mode' not in st.session_state:
+        st.session_state.previous_mask_mode = mask_mode
+    elif st.session_state.previous_mask_mode != mask_mode:
+        st.session_state.masked_df = None
+        st.session_state.report_df = None
+        st.session_state.original_df = None
+        st.session_state.previous_mask_mode = mask_mode
 
     st.divider()
     st.caption(ui["tip"])

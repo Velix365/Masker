@@ -2,11 +2,26 @@ import streamlit as st
 import pandas as pd
 import re
 import io
+import os
 import random
 from faker import Faker
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill, Font
 import copy
+
+# ─────────────────────────────────────────────
+#  Force Streamlit dark theme (fixes canvas dataframes)
+# ─────────────────────────────────────────────
+os.makedirs('.streamlit', exist_ok=True)
+with open('.streamlit/config.toml', 'w') as f:
+    f.write(
+        '[theme]\n'
+        'base="dark"\n'
+        'primaryColor="#38BDF8"\n'
+        'backgroundColor="#0B0F19"\n'
+        'secondaryBackgroundColor="#1A1F2E"\n'
+        'textColor="#F1F5F9"\n'
+    )
 
 # ─────────────────────────────────────────────
 #  Setup
@@ -180,9 +195,18 @@ h3 {
     font-size: 1.15rem !important;
 }
 
-p, span, li, div, label {
+p, li, label {
     font-family: 'DM Sans', sans-serif !important;
     color: var(--text-secondary) !important;
+}
+
+/* Apply font to markdown content only (avoids breaking widget icons) */
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] span,
+[data-testid="stMarkdownContainer"] li,
+[data-testid="stCaptionContainer"] p,
+.stAlert p, .stAlert span {
+    font-family: 'DM Sans', sans-serif !important;
 }
 
 /* ══════════════════════════════════════════════
@@ -371,6 +395,7 @@ p, span, li, div, label {
 [data-testid="stFileUploader"] > label > div > p {
     color: var(--text-secondary) !important;
     font-size: 0.95rem !important;
+    font-family: 'DM Sans', sans-serif !important;
 }
 
 [data-testid="stFileUploader"] section {
@@ -386,9 +411,24 @@ p, span, li, div, label {
     font-size: 0.82rem !important;
 }
 
+/* Solid button styling to prevent text doubling */
 [data-testid="stFileUploader"] button {
     min-height: 42px;
-    padding: 0.55rem 1.2rem !important;
+    padding: 0.55rem 1.5rem !important;
+    background: var(--bg-card-hover) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-accent) !important;
+    border-radius: 8px !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-weight: 600 !important;
+    position: relative !important;
+    z-index: 2 !important;
+    cursor: pointer !important;
+}
+
+[data-testid="stFileUploader"] button:hover {
+    background: rgba(56, 189, 248, 0.15) !important;
+    border-color: var(--accent-cyan) !important;
 }
 
 /* ══════════════════════════════════════════════
@@ -476,7 +516,6 @@ div.stError {
     background: var(--bg-card) !important;
     border: 1px solid var(--border-subtle) !important;
     border-radius: 10px !important;
-    overflow: hidden;
     transition: all 0.3s ease !important;
 }
 
@@ -487,6 +526,12 @@ div.stError {
 [data-testid="stExpander"] summary span {
     color: var(--text-primary) !important;
     font-weight: 500 !important;
+    font-family: 'DM Sans', sans-serif !important;
+}
+
+/* Ensure expander toggle icon renders correctly */
+[data-testid="stExpander"] summary svg {
+    flex-shrink: 0 !important;
 }
 
 /* ══════════════════════════════════════════════

@@ -18,133 +18,140 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Professional CSS Styling
+# Professional CSS Styling - Light & Clean
 st.markdown("""
 <style>
-    /* Main color scheme - Professional blues and greens */
-    :root {
-        --primary-color: #0066CC;
-        --secondary-color: #00AA88;
-        --background-color: #F8F9FA;
-        --text-color: #2C3E50;
-        --border-color: #E1E8ED;
+    /* Force light theme colors */
+    .stApp {
+        background-color: #FFFFFF;
     }
 
-    /* Header styling */
+    /* Header styling - Professional blue */
     h1 {
-        color: var(--primary-color) !important;
+        color: #1E88E5 !important;
         font-weight: 700 !important;
         letter-spacing: -0.5px !important;
         margin-bottom: 0.5rem !important;
     }
 
     h2, h3 {
-        color: var(--text-color) !important;
+        color: #37474F !important;
         font-weight: 600 !important;
     }
 
     /* Subtitle styling */
     .subtitle {
         font-size: 1.1rem;
-        color: #5A6C7D;
-        margin-bottom: 2rem;
+        color: #546E7A;
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
     }
 
-    /* Security banner */
+    /* Security banner - Eye-catching gradient */
     .security-banner {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 1rem 1.5rem;
-        border-radius: 10px;
+        border-radius: 12px;
         margin: 1.5rem 0;
         text-align: center;
         font-weight: 500;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        font-size: 1.05rem;
     }
 
-    /* Feature boxes */
+    /* Feature boxes - Clean cards */
     .feature-box {
-        background: white;
-        border: 2px solid var(--border-color);
-        border-radius: 8px;
+        background: #F8F9FA;
+        border: 2px solid #E3F2FD;
+        border-left: 4px solid #1E88E5;
+        border-radius: 10px;
         padding: 1.5rem;
         margin: 1rem 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         transition: all 0.3s ease;
     }
 
     .feature-box:hover {
-        border-color: var(--primary-color);
-        box-shadow: 0 4px 12px rgba(0,102,204,0.15);
-        transform: translateY(-2px);
+        border-left-color: #1565C0;
+        box-shadow: 0 4px 16px rgba(30, 136, 229, 0.2);
+        transform: translateY(-3px);
+        background: white;
     }
 
-    /* Buttons */
+    /* Buttons - Modern & clean */
     .stButton > button {
-        border-radius: 6px !important;
+        border-radius: 8px !important;
         font-weight: 600 !important;
-        padding: 0.5rem 2rem !important;
+        padding: 0.6rem 2.5rem !important;
         transition: all 0.3s ease !important;
+        border: none !important;
+    }
+
+    .stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%) !important;
+        color: white !important;
     }
 
     .stButton > button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        box-shadow: 0 6px 20px rgba(30, 136, 229, 0.3) !important;
     }
 
-    /* File uploader */
-    .stFileUploader {
-        background: white;
-        border: 2px dashed var(--border-color);
-        border-radius: 10px;
+    /* File uploader - Cleaner look */
+    [data-testid="stFileUploader"] {
+        background: #FAFAFA;
+        border: 2px dashed #BBDEFB;
+        border-radius: 12px;
         padding: 2rem;
     }
 
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background-color: #F8F9FA;
+    [data-testid="stFileUploader"]:hover {
+        border-color: #1E88E5;
+        background: white;
     }
 
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
-        color: var(--primary-color) !important;
+    /* Sidebar - Light professional */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #F5F7FA 0%, #FFFFFF 100%);
+    }
+
+    [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+        color: #1E88E5 !important;
     }
 
     /* Success/Info boxes */
-    .stSuccess, .stInfo {
+    .stSuccess {
+        background-color: #E8F5E9 !important;
         border-radius: 8px !important;
+        border-left: 4px solid #4CAF50 !important;
     }
 
-    /* Dataframe styling */
-    .dataframe {
-        border: 1px solid var(--border-color) !important;
+    .stInfo {
+        background-color: #E3F2FD !important;
         border-radius: 8px !important;
-    }
-
-    /* Trust badges */
-    .trust-badge {
-        display: inline-block;
-        background: white;
-        border: 1px solid var(--border-color);
-        border-radius: 20px;
-        padding: 0.4rem 1rem;
-        margin: 0.3rem;
-        font-size: 0.9rem;
-        font-weight: 500;
-        color: var(--text-color);
+        border-left: 4px solid #2196F3 !important;
     }
 
     /* Hide Streamlit branding */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    header {visibility: hidden;}
 
     /* Custom footer */
     .custom-footer {
         text-align: center;
         padding: 2rem 0;
-        color: #7F8C8D;
+        color: #90A4AE;
         font-size: 0.9rem;
-        border-top: 1px solid var(--border-color);
+        border-top: 2px solid #F5F5F5;
         margin-top: 3rem;
+    }
+
+    /* Improved spacing */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 3rem !important;
     }
 </style>
 """, unsafe_allow_html=True)

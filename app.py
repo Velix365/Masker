@@ -734,14 +734,11 @@ hr, .stDivider, [data-testid="stDivider"] {
 /* Force tables to fit within columns */
 [data-testid="stTable"] {
     overflow-x: auto !important;
-    width: 100% !important;
+    max-width: 100% !important;
 }
 
 [data-testid="stTable"] table {
-    width: 100% !important;
-    table-layout: fixed !important;
-    word-wrap: break-word !important;
-    overflow-wrap: break-word !important;
+    font-size: 0.82rem !important;
 }
 
 [data-testid="stMarkdownContainer"] table th {

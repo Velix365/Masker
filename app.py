@@ -390,14 +390,16 @@ if 'report_df' not in st.session_state:
 if 'original_df' not in st.session_state:
     st.session_state.original_df = None
 
-# Language selector at top of sidebar
+# Language selector at top of sidebar (BEFORE settings)
 with st.sidebar:
     lang = st.radio(
         "Language / Språk",
         options=["en", "sv"],
         format_func=lambda x: "🇬🇧 English" if x == "en" else "🇸🇪 Svenska",
         horizontal=True,
+        key="language_selector"
     )
+    st.divider()
 
 ui = T[lang]
 labels = PATTERN_LABELS[lang]
@@ -518,12 +520,66 @@ if uploaded_file:
 else:
     st.info(ui["landing_info"])
     st.markdown(ui["landing_table_header"])
+
+    # Generate dynamic examples based on selected mask_mode
     col_header = "Type" if lang == "en" else "Typ"
     ex_header  = "Example" if lang == "en" else "Exempel"
     as_header  = "Masked As" if lang == "en" else "Maskeras som"
+
+    # Mapping of display labels to pattern categories
+    label_to_category = {
+        "Person Name (NLP) ✨": "PERSON",
+        "Personnamn (NLP) ✨": "PERSON",
+        "Email": "Email Addresses",
+        "E-post": "Email Addresses",
+        "UK Phone": "UK Phone Numbers",
+        "Brittiskt telefon": "UK Phone Numbers",
+        "UK Postcode": "UK Postcodes",
+        "Brittiskt postnummer": "UK Postcodes",
+        "NI Number": "National Insurance",
+        "NI-nummer (UK)": "National Insurance",
+        "Salary (£€$)": "Salary / Currency",
+        "Lön (£€$)": "Salary / Currency",
+        "Personnummer": "Swedish Personnummer",
+        "Swedish Phone": "Swedish Phone Numbers",
+        "Svenskt mobilnummer": "Swedish Phone Numbers",
+        "Swedish Postcode": "Swedish Postcodes",
+        "Svenskt postnummer": "Swedish Postcodes",
+        "SEK Amount": "SEK Currency",
+        "SEK-belopp": "SEK Currency",
+        "Credit Card": "Credit Card Numbers",
+        "Kreditkort": "Credit Card Numbers",
+        "Date of Birth": "Dates of Birth",
+        "Födelsedatum": "Dates of Birth",
+        "IP Address": "IP Addresses",
+        "IP-adress": "IP Addresses",
+    }
+
     rows = ui["landing_table_rows"]
     table_md = f"| {col_header} | {ex_header} | {as_header} |\n|---|---|---|\n"
-    for label, example, masked, row_lang in rows:
+
+    token_counters_demo = {}
+    for label, example, _, row_lang in rows:
         if row_lang in (lang, "both"):
-            table_md += f"| {label} | {example} | {masked} |\n"
+            # Generate masked version based on current mask_mode
+            category = label_to_category.get(label)
+
+            if category == "PERSON":
+                # Handle person names with NER logic
+                if mask_mode in ("Asterisks (*****)", "Asterisker (*****)"):
+                    masked_example = '*' * len(example)
+                elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
+                    fake = fake_sv if lang == "sv" else fake_en
+                    masked_example = fake.name()
+                else:  # Token
+                    token_counters_demo["PERSON"] = token_counters_demo.get("PERSON", 0) + 1
+                    masked_example = f"PERSON_{token_counters_demo['PERSON']:03d}"
+            elif category and category in PATTERNS:
+                # Use the mask_cell logic for other patterns
+                masked_example = mask_cell(example, [category], mask_mode, token_counters_demo, lang)
+            else:
+                masked_example = example
+
+            table_md += f"| {label} | {example} | {masked_example} |\n"
+
     st.markdown(table_md)

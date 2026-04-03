@@ -523,10 +523,32 @@ div.stError {
     border-color: var(--border-accent) !important;
 }
 
-[data-testid="stExpander"] summary span {
+/* Expander label text */
+[data-testid="stExpander"] summary > span:last-child {
     color: var(--text-primary) !important;
     font-weight: 500 !important;
     font-family: 'DM Sans', sans-serif !important;
+}
+
+/* Hide broken icon font glyph, replace with CSS arrow */
+[data-testid="stExpander"] summary > span:first-child:not(:last-child) {
+    font-size: 0 !important;
+    width: 1.2rem !important;
+    height: 1.2rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+[data-testid="stExpander"] summary > span:first-child:not(:last-child)::before {
+    content: '▸' !important;
+    font-size: 1rem !important;
+    font-family: sans-serif !important;
+    color: var(--text-muted) !important;
+}
+
+[data-testid="stExpander"][open] summary > span:first-child:not(:last-child)::before {
+    content: '▾' !important;
 }
 
 /* Ensure expander toggle icon renders correctly */
@@ -1339,7 +1361,7 @@ if uploaded_file:
     )
 
     with st.expander(ui["preview_label"], expanded=False):
-        st.dataframe(df.head(10), use_container_width=True, height=400)
+        st.table(df.head(10))
 
     st.divider()
 
@@ -1368,14 +1390,14 @@ if uploaded_file:
         col1, col2 = st.columns(2)
         with col1:
             st.subheader(ui["original_sample"])
-            st.dataframe(st.session_state.original_df.head(10), use_container_width=True, height=400)
+            st.table(st.session_state.original_df.head(10))
         with col2:
             st.subheader(ui["masked_sample"])
-            st.dataframe(st.session_state.masked_df.head(10), use_container_width=True, height=400)
+            st.table(st.session_state.masked_df.head(10))
 
         if not st.session_state.report_df.empty:
             with st.expander(ui["report_expander"].format(n=len(st.session_state.report_df))):
-                st.dataframe(st.session_state.report_df, use_container_width=True, height=400)
+                st.table(st.session_state.report_df.head(50))
 
         st.divider()
         st.subheader(ui["download_header"])

@@ -382,6 +382,14 @@ def export_to_excel(original_df, masked_df, report_df):
 #  UI — STREAMLIT INTERFACE
 # ─────────────────────────────────────────────
 
+# Initialize session state
+if 'masked_df' not in st.session_state:
+    st.session_state.masked_df = None
+if 'report_df' not in st.session_state:
+    st.session_state.report_df = None
+if 'original_df' not in st.session_state:
+    st.session_state.original_df = None
+
 # Language selector at top of sidebar
 with st.sidebar:
     lang = st.radio(
@@ -458,41 +466,44 @@ if uploaded_file:
             st.warning(ui["warn_no_patterns"])
         else:
             with st.spinner(ui["spinner"]):
-                masked_df, report_df = process_dataframe(
+                st.session_state.masked_df, st.session_state.report_df = process_dataframe(
                     df, selected_patterns, mask_mode, selected_columns, lang,
                     use_nlp=True, nlp_lang="auto"
                 )
+                st.session_state.original_df = df
 
-            st.success(ui["done"].format(n=len(report_df)))
-            st.divider()
+    # Display results if they exist in session state
+    if st.session_state.masked_df is not None:
+        st.success(ui["done"].format(n=len(st.session_state.report_df)))
+        st.divider()
 
-            col1, col2 = st.columns(2)
-            with col1:
-                st.subheader(ui["original_sample"])
-                st.dataframe(df.head(10), use_container_width=True)
-            with col2:
-                st.subheader(ui["masked_sample"])
-                st.dataframe(masked_df.head(10), use_container_width=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader(ui["original_sample"])
+            st.dataframe(st.session_state.original_df.head(10), use_container_width=True)
+        with col2:
+            st.subheader(ui["masked_sample"])
+            st.dataframe(st.session_state.masked_df.head(10), use_container_width=True)
 
-            if not report_df.empty:
-                with st.expander(ui["report_expander"].format(n=len(report_df))):
-                    st.dataframe(report_df, use_container_width=True)
+        if not st.session_state.report_df.empty:
+            with st.expander(ui["report_expander"].format(n=len(st.session_state.report_df))):
+                st.dataframe(st.session_state.report_df, use_container_width=True)
 
-            st.divider()
+        st.divider()
 
-            st.subheader(ui["download_header"])
-            excel_output = export_to_excel(df, masked_df, report_df)
-            original_name = uploaded_file.name.replace('.xlsx', '').replace('.csv', '')
+        st.subheader(ui["download_header"])
+        excel_output = export_to_excel(st.session_state.original_df, st.session_state.masked_df, st.session_state.report_df)
+        original_name = uploaded_file.name.replace('.xlsx', '').replace('.csv', '')
 
-            st.download_button(
-                label=ui["download_button"],
-                data=excel_output,
-                file_name=f"{original_name}_MASKED.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-                type="primary",
-            )
-            st.caption(ui["download_caption"])
+        st.download_button(
+            label=ui["download_button"],
+            data=excel_output,
+            file_name=f"{original_name}_MASKED.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+            type="primary",
+        )
+        st.caption(ui["download_caption"])
 
 else:
     st.info(ui["landing_info"])

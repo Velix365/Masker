@@ -391,6 +391,25 @@ p, span, li, div, label {
     color: var(--text-muted) !important;
 }
 
+
+/* FIX — remove duplicate upload label */
+[data-testid="stFileUploader"] label {
+    display: none !important;
+}
+
+/* FIX — prevent layout stacking */
+[data-testid="stFileUploader"] section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+/* FIX — consistent button sizing */
+[data-testid="stFileUploader"] button {
+    min-height: 40px;
+    padding: 0.5rem 1rem !important;
+}
 /* ══════════════════════════════════════════════
    DATA TABLES & DATAFRAMES
    ══════════════════════════════════════════════ */

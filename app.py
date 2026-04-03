@@ -13,148 +13,774 @@ import copy
 # ─────────────────────────────────────────────
 st.set_page_config(
     page_title="DataMask | Professional Data Anonymization",
-    page_icon="🔒",
+    page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Professional CSS Styling - Light & Clean
+# ─────────────────────────────────────────────
+#  PROFESSIONAL DARK THEME — Custom CSS
+# ─────────────────────────────────────────────
 st.markdown("""
 <style>
-    /* Force light theme colors */
-    .stApp {
-        background-color: #FFFFFF;
-    }
+/* ══════════════════════════════════════════════
+   IMPORTS — Premium Typography
+   ══════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
 
-    /* Header styling - Professional blue */
-    h1 {
-        color: #1E88E5 !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.5px !important;
-        margin-bottom: 0.5rem !important;
-    }
+/* ══════════════════════════════════════════════
+   CSS VARIABLES
+   ══════════════════════════════════════════════ */
+:root {
+    --bg-primary: #0B0F19;
+    --bg-secondary: #111827;
+    --bg-card: #1A1F2E;
+    --bg-card-hover: #212840;
+    --bg-input: #151A28;
+    --border-subtle: rgba(255,255,255,0.06);
+    --border-accent: rgba(56, 189, 248, 0.2);
+    --text-primary: #F1F5F9;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --accent-cyan: #38BDF8;
+    --accent-emerald: #34D399;
+    --accent-violet: #A78BFA;
+    --accent-amber: #FBBF24;
+    --accent-rose: #FB7185;
+    --glow-cyan: rgba(56, 189, 248, 0.15);
+    --glow-emerald: rgba(52, 211, 153, 0.15);
+}
 
-    h2, h3 {
-        color: #37474F !important;
-        font-weight: 600 !important;
-    }
+/* ══════════════════════════════════════════════
+   GLOBAL RESET & BASE
+   ══════════════════════════════════════════════ */
+html, body, .stApp, [data-testid="stAppViewContainer"] {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    font-family: 'DM Sans', sans-serif !important;
+}
 
-    /* Subtitle styling */
-    .subtitle {
-        font-size: 1.1rem;
-        color: #546E7A;
-        margin-bottom: 1.5rem;
-        line-height: 1.6;
-    }
+.stApp {
+    background: var(--bg-primary) !important;
+}
 
-    /* Security banner - Eye-catching gradient */
-    .security-banner {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        margin: 1.5rem 0;
-        text-align: center;
-        font-weight: 500;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        font-size: 1.05rem;
-    }
+/* Animated gradient mesh background */
+.stApp::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+        radial-gradient(ellipse 80% 50% at 20% 40%, rgba(56, 189, 248, 0.06), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 20%, rgba(167, 139, 250, 0.05), transparent),
+        radial-gradient(ellipse 50% 60% at 60% 80%, rgba(52, 211, 153, 0.04), transparent);
+    pointer-events: none;
+    z-index: 0;
+    animation: meshShift 20s ease-in-out infinite alternate;
+}
 
-    /* Feature boxes - Clean cards */
-    .feature-box {
-        background: #F8F9FA;
-        border: 2px solid #E3F2FD;
-        border-left: 4px solid #1E88E5;
-        border-radius: 10px;
-        padding: 1.5rem;
-        margin: 1rem 0;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        transition: all 0.3s ease;
+@keyframes meshShift {
+    0% {
+        background:
+            radial-gradient(ellipse 80% 50% at 20% 40%, rgba(56, 189, 248, 0.06), transparent),
+            radial-gradient(ellipse 60% 40% at 80% 20%, rgba(167, 139, 250, 0.05), transparent),
+            radial-gradient(ellipse 50% 60% at 60% 80%, rgba(52, 211, 153, 0.04), transparent);
     }
-
-    .feature-box:hover {
-        border-left-color: #1565C0;
-        box-shadow: 0 4px 16px rgba(30, 136, 229, 0.2);
-        transform: translateY(-3px);
-        background: white;
+    50% {
+        background:
+            radial-gradient(ellipse 70% 60% at 50% 30%, rgba(167, 139, 250, 0.07), transparent),
+            radial-gradient(ellipse 80% 50% at 20% 70%, rgba(56, 189, 248, 0.05), transparent),
+            radial-gradient(ellipse 60% 40% at 80% 50%, rgba(251, 191, 36, 0.04), transparent);
     }
-
-    /* Buttons - Modern & clean */
-    .stButton > button {
-        border-radius: 8px !important;
-        font-weight: 600 !important;
-        padding: 0.6rem 2.5rem !important;
-        transition: all 0.3s ease !important;
-        border: none !important;
+    100% {
+        background:
+            radial-gradient(ellipse 60% 50% at 70% 60%, rgba(52, 211, 153, 0.06), transparent),
+            radial-gradient(ellipse 80% 40% at 30% 20%, rgba(56, 189, 248, 0.05), transparent),
+            radial-gradient(ellipse 50% 60% at 50% 40%, rgba(167, 139, 250, 0.05), transparent);
     }
+}
 
-    .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%) !important;
-        color: white !important;
-    }
+/* ══════════════════════════════════════════════
+   ANIMATED FLOATING PARTICLES (pure CSS)
+   ══════════════════════════════════════════════ */
+.particles-container {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
 
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(30, 136, 229, 0.3) !important;
-    }
+.particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    opacity: 0;
+    animation: floatUp linear infinite;
+}
 
-    /* File uploader - Cleaner look */
-    [data-testid="stFileUploader"] {
-        background: #FAFAFA;
-        border: 2px dashed #BBDEFB;
-        border-radius: 12px;
-        padding: 2rem;
-    }
+.particle:nth-child(1) { left: 10%; animation-duration: 18s; animation-delay: 0s; background: var(--accent-cyan); }
+.particle:nth-child(2) { left: 25%; animation-duration: 22s; animation-delay: 3s; background: var(--accent-violet); }
+.particle:nth-child(3) { left: 40%; animation-duration: 16s; animation-delay: 1s; background: var(--accent-emerald); }
+.particle:nth-child(4) { left: 55%; animation-duration: 24s; animation-delay: 5s; background: var(--accent-cyan); }
+.particle:nth-child(5) { left: 70%; animation-duration: 20s; animation-delay: 2s; background: var(--accent-violet); }
+.particle:nth-child(6) { left: 85%; animation-duration: 19s; animation-delay: 4s; background: var(--accent-emerald); }
+.particle:nth-child(7) { left: 15%; animation-duration: 21s; animation-delay: 6s; background: var(--accent-amber); width: 2px; height: 2px; }
+.particle:nth-child(8) { left: 60%; animation-duration: 17s; animation-delay: 1.5s; background: var(--accent-rose); width: 2px; height: 2px; }
+.particle:nth-child(9) { left: 35%; animation-duration: 23s; animation-delay: 7s; background: var(--accent-cyan); width: 4px; height: 4px; }
+.particle:nth-child(10) { left: 78%; animation-duration: 25s; animation-delay: 3.5s; background: var(--accent-violet); width: 2px; height: 2px; }
 
-    [data-testid="stFileUploader"]:hover {
-        border-color: #1E88E5;
-        background: white;
-    }
+@keyframes floatUp {
+    0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+    10%  { opacity: 0.6; }
+    90%  { opacity: 0.6; }
+    100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+}
 
-    /* Sidebar - Light professional */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #F5F7FA 0%, #FFFFFF 100%);
-    }
+/* ══════════════════════════════════════════════
+   MAIN CONTENT AREA
+   ══════════════════════════════════════════════ */
+.block-container {
+    padding-top: 2.5rem !important;
+    padding-bottom: 3rem !important;
+    max-width: 1200px !important;
+    position: relative;
+    z-index: 1;
+}
 
-    [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
-        color: #1E88E5 !important;
-    }
+/* ══════════════════════════════════════════════
+   TYPOGRAPHY
+   ══════════════════════════════════════════════ */
+h1 {
+    font-family: 'DM Sans', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: -1px !important;
+    background: linear-gradient(135deg, #38BDF8 0%, #A78BFA 50%, #34D399 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    font-size: 2.4rem !important;
+    line-height: 1.2 !important;
+    margin-bottom: 0.3rem !important;
+    animation: fadeSlideIn 0.8s ease-out;
+}
 
-    /* Success/Info boxes */
-    .stSuccess {
-        background-color: #E8F5E9 !important;
-        border-radius: 8px !important;
-        border-left: 4px solid #4CAF50 !important;
-    }
+h2 {
+    font-family: 'DM Sans', sans-serif !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    font-size: 1.3rem !important;
+    letter-spacing: -0.3px !important;
+}
 
-    .stInfo {
-        background-color: #E3F2FD !important;
-        border-radius: 8px !important;
-        border-left: 4px solid #2196F3 !important;
-    }
+h3 {
+    font-family: 'DM Sans', sans-serif !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    font-size: 1.15rem !important;
+}
 
-    /* Hide Streamlit branding */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+p, span, li, div, label {
+    font-family: 'DM Sans', sans-serif !important;
+    color: var(--text-secondary) !important;
+}
 
-    /* Custom footer */
-    .custom-footer {
-        text-align: center;
-        padding: 2rem 0;
-        color: #90A4AE;
-        font-size: 0.9rem;
-        border-top: 2px solid #F5F5F5;
-        margin-top: 3rem;
-    }
+/* ══════════════════════════════════════════════
+   ENTRANCE ANIMATIONS
+   ══════════════════════════════════════════════ */
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
 
-    /* Improved spacing */
-    .block-container {
-        padding-top: 2rem !important;
-        padding-bottom: 3rem !important;
-    }
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideRight {
+    from { opacity: 0; transform: translateX(-20px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes glowPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.1); }
+    50%      { box-shadow: 0 0 30px rgba(56, 189, 248, 0.2); }
+}
+
+/* ══════════════════════════════════════════════
+   HERO HEADER AREA
+   ══════════════════════════════════════════════ */
+.hero-subtitle {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    animation: fadeSlideIn 0.8s ease-out 0.15s both;
+    margin-bottom: 1rem;
+}
+
+/* Trust Banner — glassmorphism */
+.trust-banner {
+    background: rgba(56, 189, 248, 0.06);
+    border: 1px solid rgba(56, 189, 248, 0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 14px;
+    padding: 1rem 1.8rem;
+    text-align: center;
+    margin: 1.2rem 0 1.8rem 0;
+    animation: fadeSlideIn 0.8s ease-out 0.3s both;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.trust-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+
+.trust-badge .icon {
+    font-size: 1rem;
+}
+
+/* ══════════════════════════════════════════════
+   SIDEBAR
+   ══════════════════════════════════════════════ */
+[data-testid="stSidebar"] {
+    background: var(--bg-secondary) !important;
+    border-right: 1px solid var(--border-subtle) !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span,
+[data-testid="stSidebar"] label {
+    color: var(--text-secondary) !important;
+}
+
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    color: var(--accent-cyan) !important;
+    font-size: 1rem !important;
+    text-transform: uppercase;
+    letter-spacing: 1.5px !important;
+    font-weight: 600 !important;
+}
+
+[data-testid="stSidebar"] .stDivider {
+    border-color: var(--border-subtle) !important;
+}
+
+/* Sidebar checkbox styling */
+[data-testid="stSidebar"] [data-testid="stCheckbox"] label span {
+    color: var(--text-secondary) !important;
+    font-size: 0.88rem !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stCheckbox"] label:hover span {
+    color: var(--text-primary) !important;
+}
+
+/* Radio buttons in sidebar */
+[data-testid="stSidebar"] [role="radiogroup"] label {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 8px !important;
+    padding: 0.5rem 0.8rem !important;
+    transition: all 0.25s ease !important;
+}
+
+[data-testid="stSidebar"] [role="radiogroup"] label:hover {
+    border-color: var(--accent-cyan) !important;
+    background: var(--bg-card-hover) !important;
+}
+
+/* ══════════════════════════════════════════════
+   BUTTONS
+   ══════════════════════════════════════════════ */
+.stButton > button {
+    font-family: 'DM Sans', sans-serif !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    padding: 0.65rem 2rem !important;
+    letter-spacing: 0.3px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border: none !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.stButton > button[kind="primary"],
+.stButton > button[data-testid="stBaseButton-primary"] {
+    background: linear-gradient(135deg, #38BDF8, #0EA5E9) !important;
+    color: #0B0F19 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 20px rgba(56, 189, 248, 0.25) !important;
+}
+
+.stButton > button[kind="primary"]:hover,
+.stButton > button[data-testid="stBaseButton-primary"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 30px rgba(56, 189, 248, 0.35) !important;
+}
+
+.stButton > button[kind="secondary"],
+.stButton > button[data-testid="stBaseButton-secondary"] {
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-subtle) !important;
+}
+
+.stDownloadButton > button {
+    background: linear-gradient(135deg, #34D399, #10B981) !important;
+    color: #0B0F19 !important;
+    font-weight: 700 !important;
+    border-radius: 10px !important;
+    padding: 0.65rem 2rem !important;
+    border: none !important;
+    box-shadow: 0 4px 20px rgba(52, 211, 153, 0.25) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.stDownloadButton > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 30px rgba(52, 211, 153, 0.35) !important;
+}
+
+/* ══════════════════════════════════════════════
+   FILE UPLOADER
+   ══════════════════════════════════════════════ */
+[data-testid="stFileUploader"] {
+    background: var(--bg-card) !important;
+    border: 2px dashed rgba(56, 189, 248, 0.2) !important;
+    border-radius: 14px !important;
+    padding: 2rem !important;
+    transition: all 0.35s ease !important;
+    animation: scaleIn 0.6s ease-out 0.4s both;
+}
+
+[data-testid="stFileUploader"]:hover {
+    border-color: var(--accent-cyan) !important;
+    background: var(--bg-card-hover) !important;
+    box-shadow: 0 0 30px rgba(56, 189, 248, 0.08) !important;
+}
+
+[data-testid="stFileUploader"] section {
+    background: transparent !important;
+}
+
+[data-testid="stFileUploader"] button {
+    background: var(--bg-input) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 8px !important;
+}
+
+[data-testid="stFileUploader"] small {
+    color: var(--text-muted) !important;
+}
+
+/* ══════════════════════════════════════════════
+   DATA TABLES & DATAFRAMES
+   ══════════════════════════════════════════════ */
+[data-testid="stDataFrame"],
+.stDataFrame {
+    animation: scaleIn 0.5s ease-out;
+}
+
+[data-testid="stDataFrame"] [data-testid="glideDataEditor"],
+.dvn-scroller {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 10px !important;
+}
+
+/* ══════════════════════════════════════════════
+   ALERTS — Success, Info, Warning, Error
+   ══════════════════════════════════════════════ */
+[data-testid="stAlert"] {
+    border-radius: 10px !important;
+    border: none !important;
+    animation: slideRight 0.5s ease-out;
+}
+
+/* Success */
+.stAlert [data-testid="stAlertContentSuccess"],
+div[data-baseweb="notification"][kind="positive"],
+div.stSuccess {
+    background: rgba(52, 211, 153, 0.08) !important;
+    border-left: 3px solid var(--accent-emerald) !important;
+}
+
+/* Info */
+.stAlert [data-testid="stAlertContentInfo"],
+div[data-baseweb="notification"][kind="info"],
+div.stInfo {
+    background: rgba(56, 189, 248, 0.08) !important;
+    border-left: 3px solid var(--accent-cyan) !important;
+}
+
+/* Warning */
+div.stWarning {
+    background: rgba(251, 191, 36, 0.08) !important;
+    border-left: 3px solid var(--accent-amber) !important;
+}
+
+/* Error */
+div.stError {
+    background: rgba(251, 113, 133, 0.08) !important;
+    border-left: 3px solid var(--accent-rose) !important;
+}
+
+/* ══════════════════════════════════════════════
+   EXPANDERS
+   ══════════════════════════════════════════════ */
+[data-testid="stExpander"] {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 10px !important;
+    overflow: hidden;
+    transition: all 0.3s ease !important;
+}
+
+[data-testid="stExpander"]:hover {
+    border-color: var(--border-accent) !important;
+}
+
+[data-testid="stExpander"] summary span {
+    color: var(--text-primary) !important;
+    font-weight: 500 !important;
+}
+
+/* ══════════════════════════════════════════════
+   MULTISELECT / SELECT / INPUTS
+   ══════════════════════════════════════════════ */
+[data-testid="stMultiSelect"],
+[data-testid="stSelectbox"] {
+    animation: fadeIn 0.4s ease-out;
+}
+
+div[data-baseweb="select"] > div,
+div[data-baseweb="input"] > div {
+    background: var(--bg-input) !important;
+    border-color: var(--border-subtle) !important;
+    border-radius: 8px !important;
+    color: var(--text-primary) !important;
+}
+
+div[data-baseweb="select"] > div:hover,
+div[data-baseweb="input"] > div:hover {
+    border-color: var(--accent-cyan) !important;
+}
+
+div[data-baseweb="tag"] {
+    background: rgba(56, 189, 248, 0.15) !important;
+    color: var(--accent-cyan) !important;
+    border-radius: 6px !important;
+}
+
+div[data-baseweb="popover"] {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: 10px !important;
+}
+
+div[data-baseweb="popover"] li {
+    color: var(--text-secondary) !important;
+}
+
+div[data-baseweb="popover"] li:hover {
+    background: var(--bg-card-hover) !important;
+    color: var(--text-primary) !important;
+}
+
+/* ══════════════════════════════════════════════
+   DIVIDERS
+   ══════════════════════════════════════════════ */
+hr, .stDivider, [data-testid="stDivider"] {
+    border-color: var(--border-subtle) !important;
+    opacity: 0.5;
+}
+
+/* ══════════════════════════════════════════════
+   FEATURE CARDS
+   ══════════════════════════════════════════════ */
+.feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    padding: 1.6rem;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+}
+
+.feature-card:hover {
+    border-color: var(--border-accent);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+}
+
+.feature-card:hover::before {
+    opacity: 1;
+}
+
+.feature-card .card-icon {
+    font-size: 1.8rem;
+    margin-bottom: 0.8rem;
+    display: block;
+}
+
+.feature-card .card-title {
+    color: var(--text-primary) !important;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.feature-card .card-desc {
+    color: var(--text-muted) !important;
+    font-size: 0.88rem;
+    line-height: 1.6;
+}
+
+/* ══════════════════════════════════════════════
+   DETECTION TABLE (on landing)
+   ══════════════════════════════════════════════ */
+.detect-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--bg-card);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    animation: scaleIn 0.6s ease-out 0.5s both;
+}
+
+.detect-table thead th {
+    background: rgba(56, 189, 248, 0.08);
+    color: var(--accent-cyan) !important;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 0.9rem 1.2rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.detect-table tbody tr {
+    transition: background 0.2s ease;
+}
+
+.detect-table tbody tr:hover {
+    background: var(--bg-card-hover);
+}
+
+.detect-table tbody td {
+    padding: 0.75rem 1.2rem;
+    color: var(--text-secondary) !important;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--border-subtle);
+    font-family: 'DM Sans', sans-serif;
+}
+
+.detect-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.detect-table .type-cell {
+    color: var(--text-primary) !important;
+    font-weight: 500;
+}
+
+.detect-table .original-cell {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.82rem;
+    color: var(--accent-rose) !important;
+}
+
+.detect-table .masked-cell {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.82rem;
+    color: var(--accent-emerald) !important;
+}
+
+/* ══════════════════════════════════════════════
+   CUSTOM MARKDOWN TABLE OVERRIDE
+   ══════════════════════════════════════════════ */
+[data-testid="stMarkdownContainer"] table {
+    background: var(--bg-card) !important;
+    border-radius: 10px;
+    overflow: hidden;
+    width: 100%;
+}
+
+[data-testid="stMarkdownContainer"] table th {
+    background: rgba(56, 189, 248, 0.08) !important;
+    color: var(--accent-cyan) !important;
+    font-weight: 600 !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    padding: 0.8rem 1rem !important;
+}
+
+[data-testid="stMarkdownContainer"] table td {
+    color: var(--text-secondary) !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    padding: 0.7rem 1rem !important;
+    background: transparent !important;
+}
+
+[data-testid="stMarkdownContainer"] table tr:hover td {
+    background: var(--bg-card-hover) !important;
+}
+
+/* ══════════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════════ */
+.pro-footer {
+    text-align: center;
+    padding: 2.5rem 0 1rem 0;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: 3rem;
+    letter-spacing: 0.3px;
+}
+
+.pro-footer .footer-brand {
+    background: linear-gradient(135deg, #38BDF8, #A78BFA);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+/* ══════════════════════════════════════════════
+   SPINNERS
+   ══════════════════════════════════════════════ */
+.stSpinner > div {
+    border-top-color: var(--accent-cyan) !important;
+}
+
+/* ══════════════════════════════════════════════
+   HIDE STREAMLIT CHROME
+   ══════════════════════════════════════════════ */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* ══════════════════════════════════════════════
+   CAPTIONS & SMALL TEXT
+   ══════════════════════════════════════════════ */
+[data-testid="stCaptionContainer"] p,
+.stCaption {
+    color: var(--text-muted) !important;
+    font-size: 0.82rem !important;
+}
+
+/* ══════════════════════════════════════════════
+   SCROLLBAR
+   ══════════════════════════════════════════════ */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--text-muted);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* ══════════════════════════════════════════════
+   COLUMN GAP FIX
+   ══════════════════════════════════════════════ */
+[data-testid="stHorizontalBlock"] {
+    gap: 1.2rem;
+}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE ANIMATION DELAYS (staggered cards)
+   ══════════════════════════════════════════════ */
+[data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(1) .feature-card {
+    animation: fadeSlideIn 0.5s ease-out 0.2s both;
+}
+[data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(2) .feature-card {
+    animation: fadeSlideIn 0.5s ease-out 0.35s both;
+}
+[data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(3) .feature-card {
+    animation: fadeSlideIn 0.5s ease-out 0.5s both;
+}
+
+/* ══════════════════════════════════════════════
+   METRIC / STAT CARDS  (results section)
+   ══════════════════════════════════════════════ */
+.stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 50px;
+    padding: 0.5rem 1.2rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.stat-pill .num {
+    color: var(--accent-cyan);
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+}
 </style>
+
+<!-- Floating Particles (CSS-only) -->
+<div class="particles-container">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+</div>
 """, unsafe_allow_html=True)
+
 
 fake_en = Faker('en_GB')
 fake_sv = Faker('sv_SE')
@@ -169,7 +795,6 @@ def load_nlp_models():
         try:
             nlp_en = spacy.load("en_core_web_sm")
         except OSError:
-            # Try to download if not found
             import subprocess
             subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
             nlp_en = spacy.load("en_core_web_sm")
@@ -177,7 +802,6 @@ def load_nlp_models():
         try:
             nlp_sv = spacy.load("sv_core_news_sm")
         except OSError:
-            # Try to download if not found
             import subprocess
             subprocess.run(["python", "-m", "spacy", "download", "sv_core_news_sm"], check=True)
             nlp_sv = spacy.load("sv_core_news_sm")
@@ -188,7 +812,6 @@ def load_nlp_models():
         return None, None
 
 def detect_lang(text):
-    """Returns 'sv' or 'en' based on text content. Falls back to 'en'."""
     try:
         from langdetect import detect
         result = detect(text)
@@ -197,19 +820,12 @@ def detect_lang(text):
         return "en"
 
 def mask_names_ner(text, mask_mode, token_counters, lang, nlp_en, nlp_sv):
-    """
-    Uses spaCy NER to find PERSON entities and mask them.
-    Tries both English and Swedish models to catch all names.
-    """
     if not nlp_en or not nlp_sv:
-        return text  # NLP models not available
-
+        return text
     if len(text.strip()) < 2:
-        return text  # too short
+        return text
 
-    # Try both models and combine results
     persons_found = set()
-
     for nlp in [nlp_en, nlp_sv]:
         doc = nlp(text)
         for ent in doc.ents:
@@ -219,57 +835,54 @@ def mask_names_ner(text, mask_mode, token_counters, lang, nlp_en, nlp_sv):
     if not persons_found:
         return text
 
-    # Sort by position (reverse order for replacement)
     persons = sorted(persons_found, key=lambda x: x[0], reverse=True)
-
-    # Replace from end to start so character offsets stay valid
     result = text
     for start, end, name in persons:
         if mask_mode in ("Asterisks (*****)", "Asterisker (*****)"):
             replacement = '*' * len(name)
         elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
-            # Use Swedish faker for Swedish-sounding names, English otherwise
             fake = fake_sv if any(c in name.lower() for c in ['å', 'ä', 'ö']) else fake_en
             replacement = fake.name()
-        else:  # Token
+        else:
             token_counters["PERSON"] = token_counters.get("PERSON", 0) + 1
             replacement = f"PERSON_{token_counters['PERSON']:03d}"
         result = result[:start] + replacement + result[end:]
 
     return result
 
+
 # ─────────────────────────────────────────────
 #  UI TRANSLATIONS
 # ─────────────────────────────────────────────
 T = {
     "en": {
-        "title": "🔒 DataMask — Excel Sensitive Data Cleaner",
+        "title": "🛡️ DataMask",
         "subtitle": "Upload an Excel or CSV file. We'll scan it, mask the sensitive data, and give you a clean file to download.",
-        "settings": "⚙️ Settings",
-        "what_to_mask": "What to Mask",
-        "masking_style": "Masking Style",
+        "settings": "Settings",
+        "what_to_mask": "Detection Rules",
+        "masking_style": "Output Style",
         "mask_mode_label": "How should we replace sensitive data?",
         "mask_modes": ["Asterisks (*****)", "Fake Realistic Data", "Token (e.g. EMAIL_001)"],
-        "tip": "💡 'Fake Realistic Data' keeps your file usable for testing while removing all real personal info.\n\n✨ **Person names are automatically detected** using AI (spaCy NER) in both English and Swedish.",
+        "tip": "💡 **Tip:** 'Fake Realistic Data' keeps your file usable for testing while removing all real personal info.\n\n✨ Person names are auto-detected using AI (spaCy NER) in both English and Swedish.",
         "upload_label": "📂 Upload your file (.xlsx or .csv)",
         "upload_help": "Your file never leaves your browser session. Nothing is stored.",
         "file_loaded": "✅ File loaded: **{name}** — {rows} rows, {cols} columns",
-        "choose_cols": "📋 Choose which columns to scan",
-        "cols_caption": "By default all columns are scanned. Untick any you want to leave untouched.",
+        "choose_cols": "📋 Choose columns to scan",
+        "cols_caption": "All columns are scanned by default. Untick any you want to skip.",
         "cols_label": "Columns to scan:",
-        "preview_label": "👀 Preview Original Data (first 10 rows)",
-        "run_button": "🚀 Run Masking",
+        "preview_label": "👀 Preview original data (first 10 rows)",
+        "run_button": "Run Masking",
         "warn_no_patterns": "Please select at least one pattern to mask.",
-        "spinner": "Scanning and masking your data...",
-        "done": "✅ Done! **{n}** values were masked across your file.",
-        "original_sample": "🔴 Original (sample)",
-        "masked_sample": "🟢 Masked (sample)",
-        "report_expander": "📊 View Masking Report ({n} changes)",
-        "download_header": "📥 Download Your Clean File",
-        "download_button": "⬇️ Download Masked Excel File",
-        "download_caption": "The downloaded file contains 3 tabs: Original Data, Masked Data, and a Masking Report.",
-        "landing_info": "👈 Upload a file to get started. Use the sidebar to configure what gets masked.",
-        "landing_table_header": "### What does this tool detect?",
+        "spinner": "Scanning and masking your data…",
+        "done": "✅ Done — **{n}** values masked across your file.",
+        "original_sample": "🔴 Original",
+        "masked_sample": "🟢 Masked",
+        "report_expander": "📊 Masking Report — {n} changes",
+        "download_header": "📥 Download",
+        "download_button": "⬇️ Download Masked Excel",
+        "download_caption": "Contains 3 tabs: Original Data, Masked Data, and Masking Report.",
+        "landing_info": "Upload a file to get started →",
+        "landing_table_header": "### What does DataMask detect?",
         "landing_table_rows": [
             ("Person Name (NLP) ✨", "Erik Johansson", "James Smith",        "both"),
             ("Email",                "john@company.com","fake@email.com",    "both"),
@@ -286,41 +899,49 @@ T = {
             ("IP Address",           "192.168.1.1",     "83.21.45.7",        "both"),
         ],
         "file_error": "Couldn't read that file. Error: {e}",
-        "landing_col_type": "Type",
-        "landing_col_example": "Example",
-        "landing_col_masked": "Masked",
         "no_changes": "No sensitive data was found in the selected columns.",
         "download_excel_button": "⬇️ Download Excel (.xlsx)",
         "download_csv_button": "⬇️ Download CSV",
+        "trust_secure": "End-to-end secure",
+        "trust_client": "Client-side only",
+        "trust_gdpr": "GDPR compliant",
+        "trust_zero": "Zero data stored",
+        "why_title": "Why DataMask?",
+        "card_1_title": "Client-Side Processing",
+        "card_1_desc": "Your data never leaves the browser. Zero uploads, zero risk.",
+        "card_2_title": "AI-Powered Detection",
+        "card_2_desc": "Advanced NLP recognizes names in English & Swedish automatically.",
+        "card_3_title": "Instant Results",
+        "card_3_desc": "Mask thousands of rows in seconds. Download immediately.",
     },
     "sv": {
-        "title": "🔒 DataMask — Rensa känslig data i Excel",
-        "subtitle": "Ladda upp en Excel- eller CSV-fil. Vi skannar den, maskerar känsliga uppgifter och ger dig en ren fil att ladda ner.",
-        "settings": "⚙️ Inställningar",
-        "what_to_mask": "Vad ska maskeras",
-        "masking_style": "Maskeringsstil",
-        "mask_mode_label": "Hur ska vi ersätta känsliga uppgifter?",
+        "title": "🛡️ DataMask",
+        "subtitle": "Ladda upp en Excel- eller CSV-fil. Vi skannar, maskerar känsliga uppgifter och ger dig en ren fil.",
+        "settings": "Inställningar",
+        "what_to_mask": "Detektionsregler",
+        "masking_style": "Utdatastil",
+        "mask_mode_label": "Hur ska känsliga uppgifter ersättas?",
         "mask_modes": ["Asterisker (*****)", "Falsk realistisk data", "Token (t.ex. EMAIL_001)"],
-        "tip": "💡 'Falsk realistisk data' håller filen användbar för testning och tar bort all riktig personlig information.\n\n✨ **Personnamn identifieras automatiskt** med AI (spaCy NER) på både engelska och svenska.",
+        "tip": "💡 **Tips:** 'Falsk realistisk data' håller filen användbar för testning.\n\n✨ Personnamn identifieras automatiskt med AI (spaCy NER) på engelska och svenska.",
         "upload_label": "📂 Ladda upp din fil (.xlsx eller .csv)",
-        "upload_help": "Din fil lämnar aldrig din webbläsarsession. Ingenting lagras.",
-        "file_loaded": "✅ Fil inläst: **{name}** — {rows} rader, {cols} kolumner",
-        "choose_cols": "📋 Välj vilka kolumner som ska skannas",
-        "cols_caption": "Som standard skannas alla kolumner. Avmarkera de du vill lämna orörda.",
+        "upload_help": "Din fil lämnar aldrig webbläsaren. Ingenting lagras.",
+        "file_loaded": "✅ Inläst: **{name}** — {rows} rader, {cols} kolumner",
+        "choose_cols": "📋 Välj kolumner att skanna",
+        "cols_caption": "Alla kolumner skannas som standard. Avmarkera de du vill hoppa över.",
         "cols_label": "Kolumner att skanna:",
-        "preview_label": "👀 Förhandsgranska originaldata (första 10 raderna)",
-        "run_button": "🚀 Kör maskering",
-        "warn_no_patterns": "Välj minst ett mönster att maskera.",
-        "spinner": "Skannar och maskerar din data...",
-        "done": "✅ Klart! **{n}** värden maskerades i din fil.",
-        "original_sample": "🔴 Original (urval)",
-        "masked_sample": "🟢 Maskerad (urval)",
-        "report_expander": "📊 Visa maskeringsrapport ({n} ändringar)",
-        "download_header": "📥 Ladda ner din rena fil",
-        "download_button": "⬇️ Ladda ner maskerad Excel-fil",
-        "download_caption": "Den nedladdade filen innehåller 3 flikar: Originaldata, Maskerad data och Maskeringsrapport.",
-        "landing_info": "👈 Ladda upp en fil för att komma igång. Använd sidopanelen för att konfigurera vad som maskeras.",
-        "landing_table_header": "### Vad identifierar det här verktyget?",
+        "preview_label": "👀 Förhandsgranska (första 10 raderna)",
+        "run_button": "Kör maskering",
+        "warn_no_patterns": "Välj minst ett mönster.",
+        "spinner": "Skannar och maskerar…",
+        "done": "✅ Klart — **{n}** värden maskerades.",
+        "original_sample": "🔴 Original",
+        "masked_sample": "🟢 Maskerad",
+        "report_expander": "📊 Maskeringsrapport — {n} ändringar",
+        "download_header": "📥 Ladda ner",
+        "download_button": "⬇️ Ladda ner maskerad Excel",
+        "download_caption": "Filen har 3 flikar: Originaldata, Maskerad data och Rapport.",
+        "landing_info": "Ladda upp en fil för att börja →",
+        "landing_table_header": "### Vad identifierar DataMask?",
         "landing_table_rows": [
             ("Personnamn (NLP) ✨",  "Erik Johansson",          "Lars Svensson",             "both"),
             ("E-post",               "kalle@foretag.se",        "falsk@epost.se",             "both"),
@@ -337,20 +958,29 @@ T = {
             ("IP-adress",            "192.168.1.1",             "83.21.45.7",                 "both"),
         ],
         "file_error": "Kunde inte läsa filen. Fel: {e}",
-        "landing_col_type": "Typ",
-        "landing_col_example": "Exempel",
-        "landing_col_masked": "Maskerad",
-        "no_changes": "Ingen känslig data hittades i de valda kolumnerna.",
+        "no_changes": "Ingen känslig data hittades.",
         "download_excel_button": "⬇️ Ladda ner Excel (.xlsx)",
         "download_csv_button": "⬇️ Ladda ner CSV",
+        "trust_secure": "Helkrypterad",
+        "trust_client": "Klientbaserad",
+        "trust_gdpr": "GDPR-kompatibel",
+        "trust_zero": "Ingen lagring",
+        "why_title": "Varför DataMask?",
+        "card_1_title": "Klientbaserad bearbetning",
+        "card_1_desc": "Din data lämnar aldrig webbläsaren. Inga uppladdningar, ingen risk.",
+        "card_2_title": "AI-driven identifiering",
+        "card_2_desc": "Avancerad NLP känner igen namn på engelska och svenska automatiskt.",
+        "card_3_title": "Omedelbara resultat",
+        "card_3_desc": "Maskera tusentals rader på sekunder. Ladda ner direkt.",
     },
 }
 
+
 # ─────────────────────────────────────────────
-#  REGEX PATTERNS — what we scan for
+#  REGEX PATTERNS
 # ─────────────────────────────────────────────
 PATTERNS = {
-    "Person Names (NLP)":     None,  # Special case - handled by NER, not regex
+    "Person Names (NLP)":     None,
     "Email Addresses":        r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+',
     "UK Phone Numbers":       r'(?:\+44\s?|0)7\d{3}[\s-]?\d{3}[\s-]?\d{3}|(?:\+44\s?|0)7\d{3}[\s-]?\d{6}',
     "US Phone Numbers":       r'\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}',
@@ -366,25 +996,8 @@ PATTERNS = {
     "SEK Currency":           r'\d{1,3}(?:\s\d{3})+\s*kr',
 }
 
-# Which language each pattern belongs to: 'en', 'sv', or 'both'
-PATTERN_LANG = {
-    "Person Names (NLP)":    "both",
-    "Email Addresses":       "both",
-    "UK Phone Numbers":      "both",
-    "US Phone Numbers":      "both",
-    "UK Postcodes":          "both",
-    "National Insurance":    "both",
-    "Swedish Personnummer":  "both",
-    "Swedish Phone Numbers": "both",
-    "Swedish Postcodes":     "both",
-    "Credit Card Numbers":   "both",
-    "Dates of Birth":        "both",
-    "IP Addresses":          "both",
-    "Salary / Currency":     "both",
-    "SEK Currency":          "both",
-}
+PATTERN_LANG = {k: "both" for k in PATTERNS}
 
-# Bilingual display names for each pattern
 PATTERN_LABELS = {
     "en": {
         "Person Names (NLP)":    "Person Names (NLP) ✨",
@@ -420,11 +1033,11 @@ PATTERN_LABELS = {
     },
 }
 
+
 # ─────────────────────────────────────────────
 #  FAKE DATA REPLACEMENTS
 # ─────────────────────────────────────────────
 def replace_with_fake(category, lang):
-    """Returns realistic fake data for a given category and language."""
     fake = fake_sv if lang == "sv" else fake_en
 
     def fake_personnummer():
@@ -464,27 +1077,21 @@ def replace_with_fake(category, lang):
     fn = replacements.get(category)
     return fn() if fn else "****"
 
+
 # ─────────────────────────────────────────────
 #  CORE MASKING LOGIC
 # ─────────────────────────────────────────────
 def mask_cell(value, selected_patterns, mask_mode, token_counters, lang,
               use_nlp=False, nlp_lang="auto", nlp_en=None, nlp_sv=None):
     text = str(value)
-    original_text = text  # Store original for debug
-
-    # Check if Person Names (NLP) is enabled
     use_nlp_for_names = "Person Names (NLP)" in selected_patterns
 
     for category, pattern in PATTERNS.items():
         if category not in selected_patterns:
             continue
-
-        # Skip the NLP pattern in regex loop (handled separately below)
         if category == "Person Names (NLP)":
             continue
 
-        # Debug: Check if pattern matches before applying
-        before_text = text
         if mask_mode in ("Asterisks (*****)", "Asterisker (*****)"):
             text = re.sub(pattern, lambda m: '*' * len(m.group()), text)
         elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
@@ -496,11 +1103,6 @@ def mask_cell(value, selected_patterns, mask_mode, token_counters, lang,
                 return f"{key}_{token_counters[key]:03d}"
             text = re.sub(pattern, token_replace, text)
 
-        # Debug logging
-        if text != before_text:
-            print(f"[MASK] {category}: '{original_text}' -> '{text}'")
-
-    # Apply NLP for person names if enabled
     if use_nlp_for_names and nlp_en and nlp_sv:
         text = mask_names_ner(text, mask_mode, token_counters, nlp_lang, nlp_en, nlp_sv)
 
@@ -509,12 +1111,10 @@ def mask_cell(value, selected_patterns, mask_mode, token_counters, lang,
 
 def process_dataframe(df, selected_patterns, mask_mode, selected_columns, lang,
                       use_nlp=False, nlp_lang="auto"):
-    """Applies masking to a dataframe. Returns masked df + a report."""
     masked_df = df.copy()
     token_counters = {}
     report = []
 
-    # Load NLP models if Person Names (NLP) is selected
     nlp_en, nlp_sv = (None, None)
     if "Person Names (NLP)" in selected_patterns:
         nlp_en, nlp_sv = load_nlp_models()
@@ -545,7 +1145,7 @@ def process_dataframe(df, selected_patterns, mask_mode, selected_columns, lang,
 
 
 # ─────────────────────────────────────────────
-#  EXPORT TO EXCEL (with three tabs)
+#  EXPORT TO EXCEL
 # ─────────────────────────────────────────────
 def export_to_excel(original_df, masked_df, report_df):
     output = io.BytesIO()
@@ -566,11 +1166,10 @@ def export_to_excel(original_df, masked_df, report_df):
     return output
 
 
-# ─────────────────────────────────────────────
+# ═════════════════════════════════════════════
 #  UI — STREAMLIT INTERFACE
-# ─────────────────────────────────────────────
+# ═════════════════════════════════════════════
 
-# Initialize session state
 if 'masked_df' not in st.session_state:
     st.session_state.masked_df = None
 if 'report_df' not in st.session_state:
@@ -578,7 +1177,7 @@ if 'report_df' not in st.session_state:
 if 'original_df' not in st.session_state:
     st.session_state.original_df = None
 
-# Language selector at top of sidebar (BEFORE settings)
+# ── Sidebar ──────────────────────────────────
 with st.sidebar:
     lang = st.radio(
         "Language / Språk",
@@ -591,16 +1190,6 @@ with st.sidebar:
 
 ui = T[lang]
 labels = PATTERN_LABELS[lang]
-
-# Professional Header
-st.title(ui["title"])
-st.markdown(f'<p class="subtitle">{ui["subtitle"]}</p>', unsafe_allow_html=True)
-
-# Security Trust Banner
-security_message = "🛡️ 100% Secure | 🔒 Client-Side Processing | ✅ GDPR Compliant | 🚫 Zero Data Storage" if lang == "en" else "🛡️ 100% Säker | 🔒 Klientbaserad bearbetning | ✅ GDPR-kompatibel | 🚫 Ingen datalagring"
-st.markdown(f'<div class="security-banner">{security_message}</div>', unsafe_allow_html=True)
-
-st.divider()
 
 with st.sidebar:
     st.header(ui["settings"])
@@ -621,7 +1210,6 @@ with st.sidebar:
         key="mask_mode_radio"
     )
 
-    # Clear results when mask mode changes
     if 'previous_mask_mode' not in st.session_state:
         st.session_state.previous_mask_mode = mask_mode
     elif st.session_state.previous_mask_mode != mask_mode:
@@ -633,7 +1221,23 @@ with st.sidebar:
     st.divider()
     st.caption(ui["tip"])
 
-# --- File Upload ---
+
+# ── Hero Header ──────────────────────────────
+st.title(ui["title"])
+st.markdown(f'<p class="hero-subtitle">{ui["subtitle"]}</p>', unsafe_allow_html=True)
+
+# Trust banner
+st.markdown(f'''
+<div class="trust-banner">
+    <span class="trust-badge"><span class="icon">🔐</span> {ui["trust_secure"]}</span>
+    <span class="trust-badge"><span class="icon">💻</span> {ui["trust_client"]}</span>
+    <span class="trust-badge"><span class="icon">✅</span> {ui["trust_gdpr"]}</span>
+    <span class="trust-badge"><span class="icon">🚫</span> {ui["trust_zero"]}</span>
+</div>
+''', unsafe_allow_html=True)
+
+
+# ── File Upload ──────────────────────────────
 uploaded_file = st.file_uploader(
     ui["upload_label"],
     type=["xlsx", "csv"],
@@ -671,18 +1275,11 @@ if uploaded_file:
         if not selected_patterns:
             st.warning(ui["warn_no_patterns"])
         else:
-            # Debug: Print selected patterns
-            print(f"\n[DEBUG] Selected patterns: {selected_patterns}")
-            print(f"[DEBUG] Mask mode: {mask_mode}")
-
-            # Check if Person Names (NLP) is selected
             if "Person Names (NLP)" in selected_patterns:
-                with st.spinner("Loading AI models for name detection..."):
+                with st.spinner("Loading AI models…"):
                     nlp_en, nlp_sv = load_nlp_models()
                     if not nlp_en or not nlp_sv:
-                        st.error("⚠️ NLP models not available. Person names will not be masked. Please install: `python -m spacy download en_core_web_sm` and `python -m spacy download sv_core_news_sm`")
-                    else:
-                        st.info("✅ AI models loaded successfully")
+                        st.error("⚠️ NLP models not available. Person names won't be masked.")
 
             with st.spinner(ui["spinner"]):
                 st.session_state.masked_df, st.session_state.report_df = process_dataframe(
@@ -691,7 +1288,7 @@ if uploaded_file:
                 )
                 st.session_state.original_df = df
 
-    # Display results if they exist in session state
+    # ── Results ──────────────────────────────
     if st.session_state.masked_df is not None:
         st.success(ui["done"].format(n=len(st.session_state.report_df)))
         st.divider()
@@ -709,9 +1306,12 @@ if uploaded_file:
                 st.dataframe(st.session_state.report_df, use_container_width=True)
 
         st.divider()
-
         st.subheader(ui["download_header"])
-        excel_output = export_to_excel(st.session_state.original_df, st.session_state.masked_df, st.session_state.report_df)
+        excel_output = export_to_excel(
+            st.session_state.original_df,
+            st.session_state.masked_df,
+            st.session_state.report_df
+        )
         original_name = uploaded_file.name.replace('.xlsx', '').replace('.csv', '')
 
         st.download_button(
@@ -725,15 +1325,10 @@ if uploaded_file:
         st.caption(ui["download_caption"])
 
 else:
+    # ── Landing Page ─────────────────────────
     st.info(ui["landing_info"])
     st.markdown(ui["landing_table_header"])
 
-    # Generate dynamic examples based on selected mask_mode
-    col_header = "Type" if lang == "en" else "Typ"
-    ex_header  = "Example" if lang == "en" else "Exempel"
-    as_header  = "Masked As" if lang == "en" else "Maskeras som"
-
-    # Mapping of display labels to pattern categories
     label_to_category = {
         "Person Name (NLP) ✨": "PERSON",
         "Personnamn (NLP) ✨": "PERSON",
@@ -763,55 +1358,75 @@ else:
     }
 
     rows = ui["landing_table_rows"]
-    table_md = f"| {col_header} | {ex_header} | {as_header} |\n|---|---|---|\n"
+
+    # Build an HTML table for much better styling control
+    th_type = "Type" if lang == "en" else "Typ"
+    th_example = "Example" if lang == "en" else "Exempel"
+    th_masked = "Masked As" if lang == "en" else "Maskeras som"
+
+    table_html = f'''<table class="detect-table">
+    <thead><tr>
+        <th>{th_type}</th>
+        <th>{th_example}</th>
+        <th>{th_masked}</th>
+    </tr></thead><tbody>'''
 
     token_counters_demo = {}
     for label, example, _, row_lang in rows:
         if row_lang in (lang, "both"):
-            # Generate masked version based on current mask_mode
             category = label_to_category.get(label)
-
             if category == "PERSON":
-                # Handle person names with NER logic
                 if mask_mode in ("Asterisks (*****)", "Asterisker (*****)"):
                     masked_example = '*' * len(example)
                 elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
                     fake = fake_sv if lang == "sv" else fake_en
                     masked_example = fake.name()
-                else:  # Token
+                else:
                     token_counters_demo["PERSON"] = token_counters_demo.get("PERSON", 0) + 1
                     masked_example = f"PERSON_{token_counters_demo['PERSON']:03d}"
             elif category and category in PATTERNS:
-                # Use the mask_cell logic for other patterns
                 masked_example = mask_cell(example, [category], mask_mode, token_counters_demo, lang)
             else:
                 masked_example = example
 
-            table_md += f"| {label} | {example} | {masked_example} |\n"
+            table_html += f'''<tr>
+                <td class="type-cell">{label}</td>
+                <td class="original-cell">{example}</td>
+                <td class="masked-cell">{masked_example}</td>
+            </tr>'''
 
-    st.markdown(table_md)
+    table_html += '</tbody></table>'
+    st.markdown(table_html, unsafe_allow_html=True)
 
-    # Trust badges section
+    # ── Feature Cards ────────────────────────
     st.markdown("---")
-    if lang == "en":
-        st.markdown("### Why Choose DataMask?")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.markdown('<div class="feature-box">🔒 <b>100% Client-Side</b><br>Your data never leaves your browser. Zero uploads to servers.</div>', unsafe_allow_html=True)
-        with col2:
-            st.markdown('<div class="feature-box">🤖 <b>AI-Powered Detection</b><br>Advanced NLP recognizes names in English & Swedish automatically.</div>', unsafe_allow_html=True)
-        with col3:
-            st.markdown('<div class="feature-box">⚡ <b>Instant Processing</b><br>Mask thousands of rows in seconds. Download immediately.</div>', unsafe_allow_html=True)
-    else:
-        st.markdown("### Varför välja DataMask?")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.markdown('<div class="feature-box">🔒 <b>100% Klientbaserad</b><br>Din data lämnar aldrig din webbläsare. Inga uppladdningar till servrar.</div>', unsafe_allow_html=True)
-        with col2:
-            st.markdown('<div class="feature-box">🤖 <b>AI-driven identifiering</b><br>Avancerad NLP känner igen namn på engelska och svenska automatiskt.</div>', unsafe_allow_html=True)
-        with col3:
-            st.markdown('<div class="feature-box">⚡ <b>Omedelbar bearbetning</b><br>Maskera tusentals rader på sekunder. Ladda ner direkt.</div>', unsafe_allow_html=True)
+    st.markdown(f"### {ui['why_title']}")
 
-# Professional Footer
-footer_text = "Made with ❤️ | DataMask © 2025 | Privacy-First Data Anonymization" if lang == "en" else "Skapad med ❤️ | DataMask © 2025 | Integritetsfokuserad dataanonymisering"
-st.markdown(f'<div class="custom-footer">{footer_text}</div>', unsafe_allow_html=True)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f'''<div class="feature-card">
+            <span class="card-icon">🔒</span>
+            <div class="card-title">{ui["card_1_title"]}</div>
+            <div class="card-desc">{ui["card_1_desc"]}</div>
+        </div>''', unsafe_allow_html=True)
+    with col2:
+        st.markdown(f'''<div class="feature-card">
+            <span class="card-icon">🤖</span>
+            <div class="card-title">{ui["card_2_title"]}</div>
+            <div class="card-desc">{ui["card_2_desc"]}</div>
+        </div>''', unsafe_allow_html=True)
+    with col3:
+        st.markdown(f'''<div class="feature-card">
+            <span class="card-icon">⚡</span>
+            <div class="card-title">{ui["card_3_title"]}</div>
+            <div class="card-desc">{ui["card_3_desc"]}</div>
+        </div>''', unsafe_allow_html=True)
+
+
+# ── Footer ───────────────────────────────────
+footer_text = "Privacy-first data anonymization" if lang == "en" else "Integritetsfokuserad dataanonymisering"
+st.markdown(f'''
+<div class="pro-footer">
+    <span class="footer-brand">DataMask</span> · {footer_text} · © 2025
+</div>
+''', unsafe_allow_html=True)

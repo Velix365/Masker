@@ -1427,6 +1427,6 @@ else:
 footer_text = "Privacy-first data anonymization" if lang == "en" else "Integritetsfokuserad dataanonymisering"
 st.markdown(f'''
 <div class="pro-footer">
-    <span class="footer-brand">DataMask</span> · {footer_text} · © 2025
+    <span class="footer-brand">DataMask</span> · {footer_text} · © 2026
 </div>
 ''', unsafe_allow_html=True)

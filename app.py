@@ -321,6 +321,7 @@ def replace_with_fake(category, lang):
 def mask_cell(value, selected_patterns, mask_mode, token_counters, lang,
               use_nlp=False, nlp_lang="auto", nlp_en=None, nlp_sv=None):
     text = str(value)
+    original_text = text  # Store original for debug
 
     # Check if Person Names (NLP) is enabled
     use_nlp_for_names = "Person Names (NLP)" in selected_patterns
@@ -333,6 +334,8 @@ def mask_cell(value, selected_patterns, mask_mode, token_counters, lang,
         if category == "Person Names (NLP)":
             continue
 
+        # Debug: Check if pattern matches before applying
+        before_text = text
         if mask_mode in ("Asterisks (*****)", "Asterisker (*****)"):
             text = re.sub(pattern, lambda m: '*' * len(m.group()), text)
         elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
@@ -343,6 +346,10 @@ def mask_cell(value, selected_patterns, mask_mode, token_counters, lang,
                 token_counters[key] = token_counters.get(key, 0) + 1
                 return f"{key}_{token_counters[key]:03d}"
             text = re.sub(pattern, token_replace, text)
+
+        # Debug logging
+        if text != before_text:
+            print(f"[MASK] {category}: '{original_text}' -> '{text}'")
 
     # Apply NLP for person names if enabled
     if use_nlp_for_names and nlp_en and nlp_sv:
@@ -509,6 +516,10 @@ if uploaded_file:
         if not selected_patterns:
             st.warning(ui["warn_no_patterns"])
         else:
+            # Debug: Print selected patterns
+            print(f"\n[DEBUG] Selected patterns: {selected_patterns}")
+            print(f"[DEBUG] Mask mode: {mask_mode}")
+
             # Check if Person Names (NLP) is selected
             if "Person Names (NLP)" in selected_patterns:
                 with st.spinner("Loading AI models for name detection..."):

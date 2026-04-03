@@ -494,6 +494,15 @@ if uploaded_file:
         if not selected_patterns:
             st.warning(ui["warn_no_patterns"])
         else:
+            # Check if Person Names (NLP) is selected
+            if "Person Names (NLP)" in selected_patterns:
+                with st.spinner("Loading AI models for name detection..."):
+                    nlp_en, nlp_sv = load_nlp_models()
+                    if not nlp_en or not nlp_sv:
+                        st.error("⚠️ NLP models not available. Person names will not be masked. Please install: `python -m spacy download en_core_web_sm` and `python -m spacy download sv_core_news_sm`")
+                    else:
+                        st.info("✅ AI models loaded successfully")
+
             with st.spinner(ui["spinner"]):
                 st.session_state.masked_df, st.session_state.report_df = process_dataframe(
                     df, selected_patterns, mask_mode, selected_columns, lang,

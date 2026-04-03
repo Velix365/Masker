@@ -23,10 +23,25 @@ fake_sv = Faker('sv_SE')
 def load_nlp_models():
     try:
         import spacy
-        nlp_en = spacy.load("en_core_web_sm")
-        nlp_sv = spacy.load("sv_core_news_sm")
+        try:
+            nlp_en = spacy.load("en_core_web_sm")
+        except OSError:
+            # Try to download if not found
+            import subprocess
+            subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"], check=True)
+            nlp_en = spacy.load("en_core_web_sm")
+
+        try:
+            nlp_sv = spacy.load("sv_core_news_sm")
+        except OSError:
+            # Try to download if not found
+            import subprocess
+            subprocess.run(["python", "-m", "spacy", "download", "sv_core_news_sm"], check=True)
+            nlp_sv = spacy.load("sv_core_news_sm")
+
         return nlp_en, nlp_sv
-    except Exception:
+    except Exception as e:
+        st.warning(f"Error loading NLP models: {e}")
         return None, None
 
 def detect_lang(text):

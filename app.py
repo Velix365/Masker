@@ -731,6 +731,19 @@ hr, .stDivider, [data-testid="stDivider"] {
     width: 100%;
 }
 
+/* Force tables to fit within columns */
+[data-testid="stTable"] {
+    overflow-x: auto !important;
+    width: 100% !important;
+}
+
+[data-testid="stTable"] table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
 [data-testid="stMarkdownContainer"] table th {
     background: rgba(56, 189, 248, 0.08) !important;
     color: var(--accent-cyan) !important;

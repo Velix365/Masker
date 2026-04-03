@@ -56,31 +56,37 @@ def detect_lang(text):
 def mask_names_ner(text, mask_mode, token_counters, lang, nlp_en, nlp_sv):
     """
     Uses spaCy NER to find PERSON entities and mask them.
-    Auto-detects language if lang=='auto', otherwise uses the provided lang.
+    Tries both English and Swedish models to catch all names.
     """
     if not nlp_en or not nlp_sv:
         return text  # NLP models not available
 
-    if len(text.strip()) < 10:
-        return text  # too short to bother with NER
+    if len(text.strip()) < 2:
+        return text  # too short
 
-    detected = detect_lang(text) if lang == "auto" else lang
-    nlp = nlp_sv if detected == "sv" else nlp_en
+    # Try both models and combine results
+    persons_found = set()
 
-    doc = nlp(text)
-    persons = [(ent.start_char, ent.end_char, ent.text)
-               for ent in doc.ents if ent.label_ == "PER" or ent.label_ == "PERSON"]
+    for nlp in [nlp_en, nlp_sv]:
+        doc = nlp(text)
+        for ent in doc.ents:
+            if ent.label_ in ("PER", "PERSON"):
+                persons_found.add((ent.start_char, ent.end_char, ent.text))
 
-    if not persons:
+    if not persons_found:
         return text
+
+    # Sort by position (reverse order for replacement)
+    persons = sorted(persons_found, key=lambda x: x[0], reverse=True)
 
     # Replace from end to start so character offsets stay valid
     result = text
-    for start, end, name in reversed(persons):
+    for start, end, name in persons:
         if mask_mode in ("Asterisks (*****)", "Asterisker (*****)"):
             replacement = '*' * len(name)
         elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
-            fake = fake_sv if detected == "sv" else fake_en
+            # Use Swedish faker for Swedish-sounding names, English otherwise
+            fake = fake_sv if any(c in name.lower() for c in ['å', 'ä', 'ö']) else fake_en
             replacement = fake.name()
         else:  # Token
             token_counters["PERSON"] = token_counters.get("PERSON", 0) + 1

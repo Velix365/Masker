@@ -2,7 +2,8 @@ streamlit
 pandas
 openpyxl
 faker
-spacy
+numpy>=1.26.0,<2.0
+spacy>=3.7.0,<3.9.0
 langdetect
 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
 https://github.com/explosion/spacy-models/releases/download/sv_core_news_sm-3.7.0/sv_core_news_sm-3.7.0-py3-none-any.whl

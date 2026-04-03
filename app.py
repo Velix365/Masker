@@ -186,6 +186,7 @@ T = {
 #  REGEX PATTERNS — what we scan for
 # ─────────────────────────────────────────────
 PATTERNS = {
+    "Person Names (NLP)":     None,  # Special case - handled by NER, not regex
     "Email Addresses":        r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+',
     "UK Phone Numbers":       r'(\+44\s?|0)7\d{3}[\s-]?\d{6}',
     "US Phone Numbers":       r'\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}',
@@ -203,6 +204,7 @@ PATTERNS = {
 
 # Which language each pattern belongs to: 'en', 'sv', or 'both'
 PATTERN_LANG = {
+    "Person Names (NLP)":    "both",
     "Email Addresses":       "both",
     "UK Phone Numbers":      "en",
     "US Phone Numbers":      "en",
@@ -221,6 +223,7 @@ PATTERN_LANG = {
 # Bilingual display names for each pattern
 PATTERN_LABELS = {
     "en": {
+        "Person Names (NLP)":    "Person Names (NLP) ✨",
         "Email Addresses":       "Email Addresses",
         "UK Phone Numbers":      "UK Phone Numbers",
         "US Phone Numbers":      "US Phone Numbers",
@@ -236,6 +239,7 @@ PATTERN_LABELS = {
         "SEK Currency":          "SEK Currency (kr)",
     },
     "sv": {
+        "Person Names (NLP)":    "Personnamn (NLP) ✨",
         "Email Addresses":       "E-postadresser",
         "UK Phone Numbers":      "Brittiska telefonnummer",
         "US Phone Numbers":      "Amerikanska telefonnummer",
@@ -302,9 +306,18 @@ def replace_with_fake(category, lang):
 def mask_cell(value, selected_patterns, mask_mode, token_counters, lang,
               use_nlp=False, nlp_lang="auto", nlp_en=None, nlp_sv=None):
     text = str(value)
+
+    # Check if Person Names (NLP) is enabled
+    use_nlp_for_names = "Person Names (NLP)" in selected_patterns
+
     for category, pattern in PATTERNS.items():
         if category not in selected_patterns:
             continue
+
+        # Skip the NLP pattern in regex loop (handled separately below)
+        if category == "Person Names (NLP)":
+            continue
+
         if mask_mode in ("Asterisks (*****)", "Asterisker (*****)"):
             text = re.sub(pattern, lambda m: '*' * len(m.group()), text)
         elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
@@ -316,7 +329,8 @@ def mask_cell(value, selected_patterns, mask_mode, token_counters, lang,
                 return f"{key}_{token_counters[key]:03d}"
             text = re.sub(pattern, token_replace, text)
 
-    if use_nlp and nlp_en and nlp_sv:
+    # Apply NLP for person names if enabled
+    if use_nlp_for_names and nlp_en and nlp_sv:
         text = mask_names_ner(text, mask_mode, token_counters, nlp_lang, nlp_en, nlp_sv)
 
     return text
@@ -329,7 +343,10 @@ def process_dataframe(df, selected_patterns, mask_mode, selected_columns, lang,
     token_counters = {}
     report = []
 
-    nlp_en, nlp_sv = (load_nlp_models() if use_nlp else (None, None))
+    # Load NLP models if Person Names (NLP) is selected
+    nlp_en, nlp_sv = (None, None)
+    if "Person Names (NLP)" in selected_patterns:
+        nlp_en, nlp_sv = load_nlp_models()
 
     cols_to_process = selected_columns if selected_columns else df.columns.tolist()
 
@@ -342,7 +359,7 @@ def process_dataframe(df, selected_patterns, mask_mode, selected_columns, lang,
             original = str(value)
             cleaned = mask_cell(
                 original, selected_patterns, mask_mode, token_counters, lang,
-                use_nlp=use_nlp, nlp_lang=nlp_lang, nlp_en=nlp_en, nlp_sv=nlp_sv
+                use_nlp=True, nlp_lang=nlp_lang, nlp_en=nlp_en, nlp_sv=nlp_sv
             )
             if cleaned != original:
                 masked_df.at[idx, col] = cleaned

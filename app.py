@@ -922,7 +922,12 @@ def detect_lang(text):
     except Exception:
         return "en"
 
-def mask_names_ner(text, mask_mode, token_counters, lang, nlp_en, nlp_sv):
+
+def mask_names_ner(text, mask_mode, token_counters, lang, nlp_en, nlp_sv, vault):
+    """
+    NLP-based name detection with vault support for referential integrity.
+    Same name encountered twice in the same run → same replacement.
+    """
     if not nlp_en or not nlp_sv:
         return text
     if len(text.strip()) < 2:
@@ -941,21 +946,26 @@ def mask_names_ner(text, mask_mode, token_counters, lang, nlp_en, nlp_sv):
     persons = sorted(persons_found, key=lambda x: x[0], reverse=True)
     result = text
     for start, end, name in persons:
-        if mask_mode in ("Redacted (●●●●●)", "Maskerad (●●●●●)"):
-            replacement = '●' * len(name)
-        elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
-            fake = fake_sv if any(c in name.lower() for c in ['å', 'ä', 'ö']) else fake_en
-            replacement = fake.name()
+        key = ("PERSON", name)
+        if key in vault:
+            replacement = vault[key]
         else:
-            token_counters["PERSON"] = token_counters.get("PERSON", 0) + 1
-            replacement = f"PERSON_{token_counters['PERSON']:03d}"
+            if mask_mode in ("Redacted (●●●●●)", "Maskerad (●●●●●)"):
+                replacement = '●' * len(name)
+            elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
+                fake = fake_sv if any(c in name.lower() for c in ['å', 'ä', 'ö']) else fake_en
+                replacement = fake.name()
+            else:
+                token_counters["PERSON"] = token_counters.get("PERSON", 0) + 1
+                replacement = f"PERSON_{token_counters['PERSON']:03d}"
+            vault[key] = replacement
         result = result[:start] + replacement + result[end:]
 
     return result
 
 
 # ─────────────────────────────────────────────
-#  UI TRANSLATIONS  (emojis removed from section headers)
+#  UI TRANSLATIONS
 # ─────────────────────────────────────────────
 T = {
     "en": {
@@ -966,7 +976,7 @@ T = {
         "masking_style": "Output Style",
         "mask_mode_label": "How should we replace sensitive data?",
         "mask_modes": ["Redacted (●●●●●)", "Fake Realistic Data", "Token (e.g. EMAIL_001)"],
-        "tip": "💡 **Tip:** 'Fake Realistic Data' keeps your file usable for testing while removing all real personal info.\n\n✨ Person names are auto-detected using AI (spaCy NER) in both English and Swedish.",
+        "tip": "💡 **Tip:** 'Fake Realistic Data' keeps your file usable for testing while removing all real personal info.\n\n✨ Person names are auto-detected using AI (spaCy NER) in both English and Swedish.\n\n🔗 Same value always gets the same mask — joins and lookups still work.",
         "upload_label": "Upload your file (.xlsx or .csv)",
         "upload_help": "Your file never leaves your browser session. Nothing is stored.",
         "file_loaded": "✅ File loaded: **{name}** — {rows} rows, {cols} columns",
@@ -1002,20 +1012,21 @@ T = {
             ("IP Address",           "192.168.1.1",     "83.21.45.7",        "both"),
         ],
         "file_error": "Couldn't read that file. Error: {e}",
+        "csv_encoding_error": "Couldn't decode this CSV file. Try saving it as UTF-8 or Excel (.xlsx).",
         "no_changes": "No sensitive data was found in the selected columns.",
         "download_excel_button": "⬇️ Download Excel (.xlsx)",
         "download_csv_button": "⬇️ Download CSV",
         "trust_secure": "End-to-end secure",
-        "trust_client": "Client-side only",
+        "trust_client": "Session-isolated",
         "trust_gdpr": "GDPR compliant",
         "trust_zero": "Zero data stored",
         "why_title": "Why DataMask?",
-        "card_1_title": "Client-Side Processing",
-        "card_1_desc": "Your data never leaves the browser. Zero uploads, zero risk.",
+        "card_1_title": "Session-Isolated Processing",
+        "card_1_desc": "Your data is processed in memory only. Nothing is persisted to disk.",
         "card_2_title": "AI-Powered Detection",
         "card_2_desc": "Advanced NLP recognizes names in English & Swedish automatically.",
-        "card_3_title": "Instant Results",
-        "card_3_desc": "Mask thousands of rows in seconds. Download immediately.",
+        "card_3_title": "Referential Integrity",
+        "card_3_desc": "Same value always maps to the same mask — joins and lookups still work.",
     },
     "sv": {
         "title": "🛡️ DataMask",
@@ -1025,7 +1036,7 @@ T = {
         "masking_style": "Utdatastil",
         "mask_mode_label": "Hur ska känsliga uppgifter ersättas?",
         "mask_modes": ["Maskerad (●●●●●)", "Falsk realistisk data", "Token (t.ex. EMAIL_001)"],
-        "tip": "💡 **Tips:** 'Falsk realistisk data' håller filen användbar för testning.\n\n✨ Personnamn identifieras automatiskt med AI (spaCy NER) på engelska och svenska.",
+        "tip": "💡 **Tips:** 'Falsk realistisk data' håller filen användbar för testning.\n\n✨ Personnamn identifieras automatiskt med AI (spaCy NER) på engelska och svenska.\n\n🔗 Samma värde får alltid samma mask — join och lookups fungerar fortfarande.",
         "upload_label": "Ladda upp din fil (.xlsx eller .csv)",
         "upload_help": "Din fil lämnar aldrig webbläsaren. Ingenting lagras.",
         "file_loaded": "✅ Inläst: **{name}** — {rows} rader, {cols} kolumner",
@@ -1061,42 +1072,50 @@ T = {
             ("IP-adress",            "192.168.1.1",             "83.21.45.7",                 "both"),
         ],
         "file_error": "Kunde inte läsa filen. Fel: {e}",
+        "csv_encoding_error": "Kunde inte avkoda CSV-filen. Spara om den som UTF-8 eller Excel (.xlsx).",
         "no_changes": "Ingen känslig data hittades.",
         "download_excel_button": "⬇️ Ladda ner Excel (.xlsx)",
         "download_csv_button": "⬇️ Ladda ner CSV",
         "trust_secure": "Helkrypterad",
-        "trust_client": "Klientbaserad",
+        "trust_client": "Sessionisolerad",
         "trust_gdpr": "GDPR-kompatibel",
         "trust_zero": "Ingen lagring",
         "why_title": "Varför DataMask?",
-        "card_1_title": "Klientbaserad bearbetning",
-        "card_1_desc": "Din data lämnar aldrig webbläsaren. Inga uppladdningar, ingen risk.",
+        "card_1_title": "Sessionisolerad bearbetning",
+        "card_1_desc": "Din data bearbetas endast i minnet. Inget sparas till disk.",
         "card_2_title": "AI-driven identifiering",
         "card_2_desc": "Avancerad NLP känner igen namn på engelska och svenska automatiskt.",
-        "card_3_title": "Omedelbara resultat",
-        "card_3_desc": "Maskera tusentals rader på sekunder. Ladda ner direkt.",
+        "card_3_title": "Referentiell integritet",
+        "card_3_desc": "Samma värde får alltid samma mask — join och lookups fungerar fortfarande.",
     },
 }
 
 
 # ─────────────────────────────────────────────
-#  REGEX PATTERNS
+#  REGEX PATTERNS — FIX #1 + #2 + #4
 # ─────────────────────────────────────────────
+#  Order matters: most-specific → most-general.
+#  Credit Card, Personnummer, NI, IP, UK Postcode all run BEFORE
+#  Swedish Postcodes (which is the broadest digit pattern) to prevent
+#  collisions like "4111 1111 1111 1111" being fragmented by the
+#  postcode pattern. Swedish Postcodes is now tightened to require
+#  a real space + word boundaries so it won't match random 5-digit
+#  numbers (order IDs, SKUs, zip codes, etc.).
 PATTERNS = {
     "Person Names (NLP)":     None,
     "Email Addresses":        r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+',
-    "UK Phone Numbers":       r'(?:\+44\s?|0)7\d{3}[\s-]?\d{3}[\s-]?\d{3}|(?:\+44\s?|0)7\d{3}[\s-]?\d{6}',
-    "US Phone Numbers":       r'\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}',
-    "UK Postcodes":           r'[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}',
-    "National Insurance":     r'[A-Z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-Z]',
-    "Swedish Personnummer":   r'(?:19|20)?\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])[-\s]?\d{4}',
-    "Swedish Phone Numbers":  r'(?:\+46[\s-]?|0)?7[0-9][\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}',
-    "Swedish Postcodes":      r'\d{3}\s?\d{2}',
     "Credit Card Numbers":    r'\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}',
-    "Dates of Birth":         r'\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}',
-    "IP Addresses":           r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}',
+    "Swedish Personnummer":   r'\b(?:19|20)?\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])[-\s]?\d{4}\b',
+    "National Insurance":     r'\b[A-Z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-Z]\b',
+    "IP Addresses":           r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b',
+    "UK Postcodes":           r'(?i:\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b)',
+    "UK Phone Numbers":       r'(?:\+44\s?|0)7\d{3}[\s-]?\d{3}[\s-]?\d{3}|(?:\+44\s?|0)7\d{3}[\s-]?\d{6}',
+    "Swedish Phone Numbers":  r'(?:\+46[\s-]?|0)7[0-9][\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}',
+    "US Phone Numbers":       r'\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}',
+    "Dates of Birth":         r'\b\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b',
     "Salary / Currency":      r'[£€$]\s?\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?',
     "SEK Currency":           r'\d{1,3}(?:\s\d{3})+\s*kr',
+    "Swedish Postcodes":      r'\b\d{3}\s\d{2}\b',
 }
 
 PATTERN_LANG = {k: "both" for k in PATTERNS}
@@ -1182,10 +1201,23 @@ def replace_with_fake(category, lang):
 
 
 # ─────────────────────────────────────────────
-#  CORE MASKING LOGIC
+#  CORE MASKING LOGIC — FIX #3 (vault for referential integrity)
 # ─────────────────────────────────────────────
-def mask_cell(value, selected_patterns, mask_mode, token_counters, lang,
+def _clean_token_key(category):
+    """Convert category name to a clean TOKEN key (e.g. 'Salary / Currency' → 'SALARY_CURRENCY')."""
+    key = re.sub(r'[^A-Za-z0-9]+', '_', category).strip('_').upper()
+    return key
+
+
+def mask_cell(value, selected_patterns, mask_mode, token_counters, lang, vault,
               use_nlp=False, nlp_lang="auto", nlp_en=None, nlp_sv=None):
+    """
+    Mask sensitive data in a single cell value.
+
+    vault : dict — maps (category, original_string) → replacement_string.
+                   Ensures the same input always produces the same output
+                   across the whole run (referential integrity).
+    """
     text = str(value)
     use_nlp_for_names = "Person Names (NLP)" in selected_patterns
 
@@ -1195,19 +1227,29 @@ def mask_cell(value, selected_patterns, mask_mode, token_counters, lang,
         if category == "Person Names (NLP)":
             continue
 
-        if mask_mode in ("Redacted (●●●●●)", "Maskerad (●●●●●)"):
-            text = re.sub(pattern, lambda m: '●' * len(m.group()), text)
-        elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
-            text = re.sub(pattern, lambda m, c=category: replace_with_fake(c, lang), text)
-        elif mask_mode in ("Token (e.g. EMAIL_001)", "Token (t.ex. EMAIL_001)"):
-            def token_replace(m, c=category):
-                key = c.replace(" ", "_").upper()
-                token_counters[key] = token_counters.get(key, 0) + 1
-                return f"{key}_{token_counters[key]:03d}"
-            text = re.sub(pattern, token_replace, text)
+        def replace_match(m, c=category):
+            original = m.group()
+            key = (c, original)
+            # Vault lookup: same original → same replacement
+            if key in vault:
+                return vault[key]
+
+            if mask_mode in ("Redacted (●●●●●)", "Maskerad (●●●●●)"):
+                replacement = '●' * len(original)
+            elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
+                replacement = replace_with_fake(c, lang)
+            else:  # token mode
+                key_name = _clean_token_key(c)
+                token_counters[key_name] = token_counters.get(key_name, 0) + 1
+                replacement = f"{key_name}_{token_counters[key_name]:03d}"
+
+            vault[key] = replacement
+            return replacement
+
+        text = re.sub(pattern, replace_match, text)
 
     if use_nlp_for_names and nlp_en and nlp_sv:
-        text = mask_names_ner(text, mask_mode, token_counters, nlp_lang, nlp_en, nlp_sv)
+        text = mask_names_ner(text, mask_mode, token_counters, lang, nlp_en, nlp_sv, vault)
 
     return text
 
@@ -1216,6 +1258,7 @@ def process_dataframe(df, selected_patterns, mask_mode, selected_columns, lang,
                       use_nlp=False, nlp_lang="auto"):
     masked_df = df.copy()
     token_counters = {}
+    vault = {}  # FIX #3: referential integrity across the whole document
     report = []
 
     nlp_en, nlp_sv = (None, None)
@@ -1233,7 +1276,8 @@ def process_dataframe(df, selected_patterns, mask_mode, selected_columns, lang,
             original = str(value)
             cleaned = mask_cell(
                 original, selected_patterns, mask_mode, token_counters, lang,
-                use_nlp=True, nlp_lang=nlp_lang, nlp_en=nlp_en, nlp_sv=nlp_sv
+                vault=vault, use_nlp=True, nlp_lang=nlp_lang,
+                nlp_en=nlp_en, nlp_sv=nlp_sv
             )
             if cleaned != original:
                 masked_df.at[idx, col] = cleaned
@@ -1245,6 +1289,23 @@ def process_dataframe(df, selected_patterns, mask_mode, selected_columns, lang,
                 })
 
     return masked_df, pd.DataFrame(report)
+
+
+# ─────────────────────────────────────────────
+#  CSV LOADER — FIX #4b (encoding fallback)
+# ─────────────────────────────────────────────
+def load_csv_with_fallback(uploaded_file):
+    """Try common encodings in order. Raises ValueError if none work."""
+    encodings = ("utf-8", "utf-8-sig", "cp1252", "iso-8859-1", "latin-1")
+    last_err = None
+    for enc in encodings:
+        try:
+            uploaded_file.seek(0)
+            return pd.read_csv(uploaded_file, encoding=enc)
+        except (UnicodeDecodeError, UnicodeError) as e:
+            last_err = e
+            continue
+    raise ValueError(f"Could not decode CSV with any common encoding. Last error: {last_err}")
 
 
 # ─────────────────────────────────────────────
@@ -1351,7 +1412,12 @@ uploaded_file = st.file_uploader(
 if uploaded_file:
     try:
         if uploaded_file.name.endswith(".csv"):
-            df = pd.read_csv(uploaded_file)
+            # FIX #4b: try multiple encodings (Swedish CSVs are often cp1252/latin-1)
+            try:
+                df = load_csv_with_fallback(uploaded_file)
+            except ValueError:
+                st.error(ui["csv_encoding_error"])
+                st.stop()
         else:
             df = pd.read_excel(uploaded_file)
     except Exception as e:
@@ -1476,6 +1542,7 @@ else:
     </tr></thead><tbody>'''
 
     token_counters_demo = {}
+    vault_demo = {}  # FIX #3: vault for landing-page demo too
     for label, example, _, row_lang in rows:
         if row_lang in (lang, "both"):
             category = label_to_category.get(label)
@@ -1489,7 +1556,10 @@ else:
                     token_counters_demo["PERSON"] = token_counters_demo.get("PERSON", 0) + 1
                     masked_example = f"PERSON_{token_counters_demo['PERSON']:03d}"
             elif category and category in PATTERNS:
-                masked_example = mask_cell(example, [category], mask_mode, token_counters_demo, lang)
+                masked_example = mask_cell(
+                    example, [category], mask_mode, token_counters_demo, lang,
+                    vault=vault_demo
+                )
             else:
                 masked_example = example
 
@@ -1521,7 +1591,7 @@ else:
         </div>''', unsafe_allow_html=True)
     with col3:
         st.markdown(f'''<div class="feature-card">
-            <span class="card-icon">⚡</span>
+            <span class="card-icon">🔗</span>
             <div class="card-title">{ui["card_3_title"]}</div>
             <div class="card-desc">{ui["card_3_desc"]}</div>
         </div>''', unsafe_allow_html=True)

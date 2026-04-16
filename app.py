@@ -463,28 +463,20 @@ p, li, label {
     border-radius: 10px !important;
 }
 
-[data-testid="stDataFrame"] canvas {
-    opacity: 1 !important;
-}
-
-[data-testid="stDataFrame"] [role="gridcell"],
-[data-testid="stDataFrame"] [data-testid="glideDataEditor"] * {
-    color: var(--text-primary) !important;
-}
-
-[data-testid="stDataFrame"] .gdg-style,
-[data-testid="stDataFrame"] .dvn-scroller,
+/* Theme the Glide Data Grid via its official CSS variables only.
+   Do NOT use wildcard color overrides or force canvas opacity — Glide
+   renders text onto <canvas> and those overrides cause blank cells. */
 [data-testid="stDataFrame"] [data-testid="glideDataEditor"] {
-    --gdg-bg-cell: #1A1F2E !important;
-    --gdg-bg-header: #151A28 !important;
-    --gdg-text-dark: #F1F5F9 !important;
-    --gdg-text-medium: #94A3B8 !important;
-    --gdg-text-light: #64748B !important;
-    --gdg-border-color: rgba(255,255,255,0.06) !important;
-    --gdg-bg-header-has-focus: #212840 !important;
-    --gdg-bg-cell-medium: #212840 !important;
-    --gdg-accent-color: #38BDF8 !important;
-    --gdg-accent-light: rgba(56, 189, 248, 0.15) !important;
+    --gdg-bg-cell: #1A1F2E;
+    --gdg-bg-header: #151A28;
+    --gdg-text-dark: #F1F5F9;
+    --gdg-text-medium: #94A3B8;
+    --gdg-text-light: #64748B;
+    --gdg-border-color: rgba(255,255,255,0.06);
+    --gdg-bg-header-has-focus: #212840;
+    --gdg-bg-cell-medium: #212840;
+    --gdg-accent-color: #38BDF8;
+    --gdg-accent-light: rgba(56, 189, 248, 0.15);
 }
 
 /* ══════════════════════════════════════════════
@@ -989,6 +981,7 @@ T = {
         "spinner": "Scanning and masking your data…",
         "progress_col": "Scanning column: **{col}** ({i}/{n})",
         "done": "✅ Done — **{n}** values masked across your file.",
+        "no_changes": "ℹ️ No sensitive data was detected in the selected columns. Your file appears to be clean already.",
         "original_sample": "🔴 Original",
         "masked_sample": "🟢 Masked",
         "report_expander": "Masking Report — {n} changes",
@@ -1059,6 +1052,7 @@ T = {
         "spinner": "Skannar och maskerar…",
         "progress_col": "Skannar kolumn: **{col}** ({i}/{n})",
         "done": "✅ Klart — **{n}** värden maskerades.",
+        "no_changes": "ℹ️ Ingen känslig data hittades i de valda kolumnerna. Filen verkar redan vara ren.",
         "original_sample": "🔴 Original",
         "masked_sample": "🟢 Maskerad",
         "report_expander": "Maskeringsrapport — {n} ändringar",
@@ -1454,9 +1448,6 @@ with st.sidebar:
         st.session_state.original_df = None
         st.session_state.previous_mode_idx = current_mode_idx
 
-    st.divider()
-    st.caption(ui["tip"])
-
 
 # ── Hero Header ──────────────────────────────
 st.title(ui["title"])
@@ -1555,7 +1546,11 @@ if uploaded_file:
 
     # ── Results ──────────────────────────────
     if st.session_state.masked_df is not None:
-        st.success(ui["done"].format(n=len(st.session_state.report_df)))
+        n_changes = len(st.session_state.report_df)
+        if n_changes == 0:
+            st.info(ui["no_changes"])
+        else:
+            st.success(ui["done"].format(n=n_changes))
         st.divider()
 
         col1, col2 = st.columns(2)

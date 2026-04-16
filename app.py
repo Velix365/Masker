@@ -2,29 +2,16 @@ import streamlit as st
 import pandas as pd
 import re
 import io
-import os
 import random
 from faker import Faker
-from openpyxl import load_workbook
 from openpyxl.styles import PatternFill, Font
-import copy
-
-# ─────────────────────────────────────────────
-#  Force Streamlit dark theme (fixes canvas dataframes)
-# ─────────────────────────────────────────────
-os.makedirs('.streamlit', exist_ok=True)
-with open('.streamlit/config.toml', 'w') as f:
-    f.write(
-        '[theme]\n'
-        'base="dark"\n'
-        'primaryColor="#38BDF8"\n'
-        'backgroundColor="#0B0F19"\n'
-        'secondaryBackgroundColor="#1A1F2E"\n'
-        'textColor="#F1F5F9"\n'
-    )
 
 # ─────────────────────────────────────────────
 #  Setup
+#  NOTE: Streamlit theme is now configured via a real
+#  `.streamlit/config.toml` file in the repo — NOT written
+#  at runtime. Writing config.toml at runtime has no effect
+#  (only read on startup) and breaks read-only deployments.
 # ─────────────────────────────────────────────
 st.set_page_config(
     page_title="DataMask | Professional Data Anonymization",
@@ -38,14 +25,8 @@ st.set_page_config(
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
-/* ══════════════════════════════════════════════
-   IMPORTS — Premium Typography
-   ══════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ══════════════════════════════════════════════
-   CSS VARIABLES
-   ══════════════════════════════════════════════ */
 :root {
     --bg-primary: #0B0F19;
     --bg-secondary: #111827;
@@ -56,514 +37,143 @@ st.markdown("""
     --border-accent: rgba(56, 189, 248, 0.2);
     --text-primary: #F1F5F9;
     --text-secondary: #94A3B8;
-    --text-muted: #64748B;
+    --text-muted: #94A3B8;
     --accent-cyan: #38BDF8;
     --accent-emerald: #34D399;
     --accent-violet: #A78BFA;
     --accent-amber: #FBBF24;
     --accent-rose: #FB7185;
-    --glow-cyan: rgba(56, 189, 248, 0.15);
-    --glow-emerald: rgba(52, 211, 153, 0.15);
 }
 
-/* ══════════════════════════════════════════════
-   GLOBAL RESET & BASE
-   ══════════════════════════════════════════════ */
+/* Global backgrounds */
 html, body, .stApp, [data-testid="stAppViewContainer"] {
     background-color: var(--bg-primary) !important;
     color: var(--text-primary) !important;
     font-family: 'DM Sans', sans-serif !important;
 }
 
-.stApp {
-    background: var(--bg-primary) !important;
-}
-
-/* Animated gradient mesh background */
-.stApp::before {
-    content: '';
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background:
-        radial-gradient(ellipse 80% 50% at 20% 40%, rgba(56, 189, 248, 0.06), transparent),
-        radial-gradient(ellipse 60% 40% at 80% 20%, rgba(167, 139, 250, 0.05), transparent),
-        radial-gradient(ellipse 50% 60% at 60% 80%, rgba(52, 211, 153, 0.04), transparent);
-    pointer-events: none;
-    z-index: 0;
-    animation: meshShift 20s ease-in-out infinite alternate;
-}
-
-@keyframes meshShift {
-    0% {
-        background:
-            radial-gradient(ellipse 80% 50% at 20% 40%, rgba(56, 189, 248, 0.06), transparent),
-            radial-gradient(ellipse 60% 40% at 80% 20%, rgba(167, 139, 250, 0.05), transparent),
-            radial-gradient(ellipse 50% 60% at 60% 80%, rgba(52, 211, 153, 0.04), transparent);
-    }
-    50% {
-        background:
-            radial-gradient(ellipse 70% 60% at 50% 30%, rgba(167, 139, 250, 0.07), transparent),
-            radial-gradient(ellipse 80% 50% at 20% 70%, rgba(56, 189, 248, 0.05), transparent),
-            radial-gradient(ellipse 60% 40% at 80% 50%, rgba(251, 191, 36, 0.04), transparent);
-    }
-    100% {
-        background:
-            radial-gradient(ellipse 60% 50% at 70% 60%, rgba(52, 211, 153, 0.06), transparent),
-            radial-gradient(ellipse 80% 40% at 30% 20%, rgba(56, 189, 248, 0.05), transparent),
-            radial-gradient(ellipse 50% 60% at 50% 40%, rgba(167, 139, 250, 0.05), transparent);
-    }
-}
-
-/* ══════════════════════════════════════════════
-   ANIMATED FLOATING PARTICLES (pure CSS)
-   ══════════════════════════════════════════════ */
-.particles-container {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
-}
-
-.particle {
-    position: absolute;
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    opacity: 0;
-    animation: floatUp linear infinite;
-}
-
-.particle:nth-child(1) { left: 10%; animation-duration: 18s; animation-delay: 0s; background: var(--accent-cyan); }
-.particle:nth-child(2) { left: 25%; animation-duration: 22s; animation-delay: 3s; background: var(--accent-violet); }
-.particle:nth-child(3) { left: 40%; animation-duration: 16s; animation-delay: 1s; background: var(--accent-emerald); }
-.particle:nth-child(4) { left: 55%; animation-duration: 24s; animation-delay: 5s; background: var(--accent-cyan); }
-.particle:nth-child(5) { left: 70%; animation-duration: 20s; animation-delay: 2s; background: var(--accent-violet); }
-.particle:nth-child(6) { left: 85%; animation-duration: 19s; animation-delay: 4s; background: var(--accent-emerald); }
-.particle:nth-child(7) { left: 15%; animation-duration: 21s; animation-delay: 6s; background: var(--accent-amber); width: 2px; height: 2px; }
-.particle:nth-child(8) { left: 60%; animation-duration: 17s; animation-delay: 1.5s; background: var(--accent-rose); width: 2px; height: 2px; }
-.particle:nth-child(9) { left: 35%; animation-duration: 23s; animation-delay: 7s; background: var(--accent-cyan); width: 4px; height: 4px; }
-.particle:nth-child(10) { left: 78%; animation-duration: 25s; animation-delay: 3.5s; background: var(--accent-violet); width: 2px; height: 2px; }
-
-@keyframes floatUp {
-    0%   { transform: translateY(100vh) scale(0); opacity: 0; }
-    10%  { opacity: 0.6; }
-    90%  { opacity: 0.6; }
-    100% { transform: translateY(-10vh) scale(1); opacity: 0; }
-}
-
-/* ══════════════════════════════════════════════
-   MAIN CONTENT AREA
-   ══════════════════════════════════════════════ */
+/* Main content */
 .block-container {
     padding-top: 2.5rem !important;
     padding-bottom: 3rem !important;
     max-width: 1200px !important;
-    position: relative;
-    z-index: 1;
 }
 
-/* ══════════════════════════════════════════════
-   TYPOGRAPHY
-   ══════════════════════════════════════════════ */
+/* Typography */
 h1 {
-    font-family: 'DM Sans', sans-serif !important;
     font-weight: 700 !important;
     letter-spacing: -1px !important;
-    background: linear-gradient(135deg, #38BDF8 0%, #A78BFA 50%, #34D399 100%) !important;
-    -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-    background-clip: text !important;
+    background: linear-gradient(135deg, #38BDF8 0%, #A78BFA 50%, #34D399 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
     font-size: 2.4rem !important;
     line-height: 1.2 !important;
-    margin-bottom: 0.3rem !important;
-    animation: fadeSlideIn 0.8s ease-out;
 }
+h2 { color: var(--text-primary) !important; font-weight: 600 !important; font-size: 1.3rem !important; }
+h3 { color: var(--text-primary) !important; font-weight: 600 !important; font-size: 1.15rem !important; }
+p, li, label { color: var(--text-secondary) !important; }
 
-h2 {
-    font-family: 'DM Sans', sans-serif !important;
-    color: var(--text-primary) !important;
-    font-weight: 600 !important;
-    font-size: 1.3rem !important;
-    letter-spacing: -0.3px !important;
-}
+/* Hero */
+.hero-subtitle { font-size: 1.05rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 1rem; }
 
-h3 {
-    font-family: 'DM Sans', sans-serif !important;
-    color: var(--text-primary) !important;
-    font-weight: 600 !important;
-    font-size: 1.15rem !important;
-}
-
-p, li, label {
-    font-family: 'DM Sans', sans-serif !important;
-    color: var(--text-secondary) !important;
-}
-
-/* Apply font to markdown content only (avoids breaking widget icons) */
-[data-testid="stMarkdownContainer"] p,
-[data-testid="stMarkdownContainer"] span,
-[data-testid="stMarkdownContainer"] li,
-[data-testid="stCaptionContainer"] p,
-.stAlert p, .stAlert span {
-    font-family: 'DM Sans', sans-serif !important;
-}
-
-/* ══════════════════════════════════════════════
-   ENTRANCE ANIMATIONS
-   ══════════════════════════════════════════════ */
-@keyframes fadeSlideIn {
-    from { opacity: 0; transform: translateY(16px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
-}
-
-@keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to   { opacity: 1; transform: scale(1); }
-}
-
-@keyframes slideRight {
-    from { opacity: 0; transform: translateX(-20px); }
-    to   { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes glowPulse {
-    0%, 100% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.1); }
-    50%      { box-shadow: 0 0 30px rgba(56, 189, 248, 0.2); }
-}
-
-/* ══════════════════════════════════════════════
-   HERO HEADER AREA
-   ══════════════════════════════════════════════ */
-.hero-subtitle {
-    font-size: 1.05rem;
-    color: var(--text-secondary);
-    line-height: 1.7;
-    animation: fadeSlideIn 0.8s ease-out 0.15s both;
-    margin-bottom: 1rem;
-}
-
-/* Trust Banner — glassmorphism */
+/* Trust banner */
 .trust-banner {
     background: rgba(56, 189, 248, 0.06);
     border: 1px solid rgba(56, 189, 248, 0.15);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border-radius: 14px;
     padding: 1rem 1.8rem;
     text-align: center;
     margin: 1.2rem 0 1.8rem 0;
-    animation: fadeSlideIn 0.8s ease-out 0.3s both;
     display: flex;
     justify-content: center;
     gap: 2rem;
     flex-wrap: wrap;
 }
-
 .trust-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    font-weight: 500;
-    letter-spacing: 0.2px;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.85rem; color: var(--text-secondary); font-weight: 500;
 }
 
-.trust-badge .icon {
-    font-size: 1rem;
-}
-
-/* ══════════════════════════════════════════════
-   SIDEBAR
-   ══════════════════════════════════════════════ */
+/* Sidebar */
 [data-testid="stSidebar"] {
     background: var(--bg-secondary) !important;
     border-right: 1px solid var(--border-subtle) !important;
 }
-
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span,
-[data-testid="stSidebar"] label {
-    color: var(--text-secondary) !important;
-}
-
-[data-testid="stSidebar"] h2,
-[data-testid="stSidebar"] h3 {
+[data-testid="stSidebar"] label { color: var(--text-secondary) !important; }
+[data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
     color: var(--accent-cyan) !important;
     font-size: 1rem !important;
     text-transform: uppercase;
     letter-spacing: 1.5px !important;
     font-weight: 600 !important;
 }
-
-[data-testid="stSidebar"] .stDivider {
-    border-color: var(--border-subtle) !important;
+[data-testid="stSidebar"] .group-label {
+    color: var(--text-muted) !important;
+    font-size: 0.72rem !important;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    margin: 0.8rem 0 0.3rem 0 !important;
+    display: block;
 }
 
-/* Sidebar checkbox styling */
-[data-testid="stSidebar"] [data-testid="stCheckbox"] label span {
-    color: var(--text-secondary) !important;
-    font-size: 0.88rem !important;
-}
-
-[data-testid="stSidebar"] [data-testid="stCheckbox"] label:hover span {
-    color: var(--text-primary) !important;
-}
-
-/* Radio buttons in sidebar */
-[data-testid="stSidebar"] [role="radiogroup"] label {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border-subtle) !important;
-    border-radius: 8px !important;
-    padding: 0.5rem 0.8rem !important;
-    transition: all 0.25s ease !important;
-}
-
-[data-testid="stSidebar"] [role="radiogroup"] label:hover {
-    border-color: var(--accent-cyan) !important;
-    background: var(--bg-card-hover) !important;
-}
-
-/* ══════════════════════════════════════════════
-   BUTTONS
-   ══════════════════════════════════════════════ */
+/* Buttons */
 .stButton > button {
-    font-family: 'DM Sans', sans-serif !important;
     font-weight: 600 !important;
     border-radius: 10px !important;
     padding: 0.65rem 2rem !important;
-    letter-spacing: 0.3px !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     border: none !important;
-    position: relative;
-    overflow: hidden;
 }
-
 .stButton > button[kind="primary"],
 .stButton > button[data-testid="stBaseButton-primary"] {
     background: linear-gradient(135deg, #38BDF8, #0EA5E9) !important;
     color: #0B0F19 !important;
     font-weight: 700 !important;
-    box-shadow: 0 4px 20px rgba(56, 189, 248, 0.25) !important;
 }
-
-.stButton > button[kind="primary"]:hover,
-.stButton > button[data-testid="stBaseButton-primary"]:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 30px rgba(56, 189, 248, 0.35) !important;
-}
-
 .stButton > button[kind="secondary"],
 .stButton > button[data-testid="stBaseButton-secondary"] {
     background: var(--bg-card) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--border-subtle) !important;
 }
-
 .stDownloadButton > button {
     background: linear-gradient(135deg, #34D399, #10B981) !important;
     color: #0B0F19 !important;
     font-weight: 700 !important;
     border-radius: 10px !important;
-    padding: 0.65rem 2rem !important;
     border: none !important;
-    box-shadow: 0 4px 20px rgba(52, 211, 153, 0.25) !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-.stDownloadButton > button:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 8px 30px rgba(52, 211, 153, 0.35) !important;
-}
-
-/* ══════════════════════════════════════════════
-   FILE UPLOADER — FIXED OVERLAP
-   ══════════════════════════════════════════════ */
+/* File uploader */
 [data-testid="stFileUploader"] {
     background: var(--bg-card) !important;
     border: 1px dashed var(--border-accent) !important;
     border-radius: 14px !important;
     padding: 1.5rem !important;
 }
-
-[data-testid="stFileUploader"] > label > div > p {
-    color: var(--text-secondary) !important;
-    font-size: 0.95rem !important;
-    font-family: 'DM Sans', sans-serif !important;
-}
-
-[data-testid="stFileUploader"] section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-[data-testid="stFileUploader"] section > span {
-    color: var(--text-muted) !important;
-    font-size: 0.82rem !important;
-}
-
-/* Solid button styling to prevent text doubling */
 [data-testid="stFileUploader"] button {
-    min-height: 42px;
-    padding: 0.55rem 1.5rem !important;
     background: var(--bg-card-hover) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--border-accent) !important;
     border-radius: 8px !important;
-    font-family: 'DM Sans', sans-serif !important;
     font-weight: 600 !important;
-    position: relative !important;
-    z-index: 2 !important;
-    cursor: pointer !important;
 }
 
-[data-testid="stFileUploader"] button:hover {
-    background: rgba(56, 189, 248, 0.15) !important;
-    border-color: var(--accent-cyan) !important;
-}
+/* Alerts */
+div.stSuccess { background: rgba(52, 211, 153, 0.08) !important; border-left: 3px solid var(--accent-emerald) !important; }
+div.stInfo    { background: rgba(56, 189, 248, 0.08) !important; border-left: 3px solid var(--accent-cyan) !important; }
+div.stWarning { background: rgba(251, 191, 36, 0.08) !important; border-left: 3px solid var(--accent-amber) !important; }
+div.stError   { background: rgba(251, 113, 133, 0.08) !important; border-left: 3px solid var(--accent-rose) !important; }
 
-/* ══════════════════════════════════════════════
-   DATA TABLES & DATAFRAMES — DARK THEME FIX
-   ══════════════════════════════════════════════ */
-[data-testid="stDataFrame"],
-.stDataFrame {
-    animation: scaleIn 0.5s ease-out;
-}
-
-[data-testid="stDataFrame"] [data-testid="glideDataEditor"],
-.dvn-scroller {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border-subtle) !important;
-    border-radius: 10px !important;
-}
-
-/* Force dataframe cell text to be visible */
-[data-testid="stDataFrame"] canvas {
-    opacity: 1 !important;
-}
-
-[data-testid="stDataFrame"] [role="gridcell"],
-[data-testid="stDataFrame"] [data-testid="glideDataEditor"] * {
-    color: var(--text-primary) !important;
-}
-
-/* Ensure Glide Data Grid renders with visible colors */
-[data-testid="stDataFrame"] .gdg-style,
-[data-testid="stDataFrame"] .dvn-scroller,
-[data-testid="stDataFrame"] [data-testid="glideDataEditor"] {
-    --gdg-bg-cell: #1A1F2E !important;
-    --gdg-bg-header: #151A28 !important;
-    --gdg-text-dark: #F1F5F9 !important;
-    --gdg-text-medium: #94A3B8 !important;
-    --gdg-text-light: #64748B !important;
-    --gdg-border-color: rgba(255,255,255,0.06) !important;
-    --gdg-bg-header-has-focus: #212840 !important;
-    --gdg-bg-cell-medium: #212840 !important;
-    --gdg-accent-color: #38BDF8 !important;
-    --gdg-accent-light: rgba(56, 189, 248, 0.15) !important;
-}
-
-/* ══════════════════════════════════════════════
-   ALERTS — Success, Info, Warning, Error
-   ══════════════════════════════════════════════ */
-[data-testid="stAlert"] {
-    border-radius: 10px !important;
-    border: none !important;
-    animation: slideRight 0.5s ease-out;
-}
-
-/* Success */
-.stAlert [data-testid="stAlertContentSuccess"],
-div[data-baseweb="notification"][kind="positive"],
-div.stSuccess {
-    background: rgba(52, 211, 153, 0.08) !important;
-    border-left: 3px solid var(--accent-emerald) !important;
-}
-
-/* Info */
-.stAlert [data-testid="stAlertContentInfo"],
-div[data-baseweb="notification"][kind="info"],
-div.stInfo {
-    background: rgba(56, 189, 248, 0.08) !important;
-    border-left: 3px solid var(--accent-cyan) !important;
-}
-
-/* Warning */
-div.stWarning {
-    background: rgba(251, 191, 36, 0.08) !important;
-    border-left: 3px solid var(--accent-amber) !important;
-}
-
-/* Error */
-div.stError {
-    background: rgba(251, 113, 133, 0.08) !important;
-    border-left: 3px solid var(--accent-rose) !important;
-}
-
-/* ══════════════════════════════════════════════
-   EXPANDERS
-   ══════════════════════════════════════════════ */
+/* Expanders */
 [data-testid="stExpander"] {
     background: var(--bg-card) !important;
     border: 1px solid var(--border-subtle) !important;
     border-radius: 10px !important;
-    transition: all 0.3s ease !important;
 }
 
-[data-testid="stExpander"]:hover {
-    border-color: var(--border-accent) !important;
-}
-
-/* Expander label text */
-[data-testid="stExpander"] summary > span:last-child {
-    color: var(--text-primary) !important;
-    font-weight: 500 !important;
-    font-family: 'DM Sans', sans-serif !important;
-}
-
-/* Hide broken icon font glyph, replace with CSS arrow */
-[data-testid="stExpander"] summary > span:first-child:not(:last-child) {
-    font-size: 0 !important;
-    width: 1.2rem !important;
-    height: 1.2rem !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-}
-
-[data-testid="stExpander"] summary > span:first-child:not(:last-child)::before {
-    content: '▸' !important;
-    font-size: 1rem !important;
-    font-family: sans-serif !important;
-    color: var(--text-muted) !important;
-}
-
-[data-testid="stExpander"][open] summary > span:first-child:not(:last-child)::before {
-    content: '▾' !important;
-}
-
-/* Ensure expander toggle icon renders correctly */
-[data-testid="stExpander"] summary svg {
-    flex-shrink: 0 !important;
-}
-
-/* ══════════════════════════════════════════════
-   MULTISELECT / SELECT / INPUTS
-   ══════════════════════════════════════════════ */
-[data-testid="stMultiSelect"],
-[data-testid="stSelectbox"] {
-    animation: fadeIn 0.4s ease-out;
-}
-
+/* Select / multiselect / inputs */
 div[data-baseweb="select"] > div,
 div[data-baseweb="input"] > div {
     background: var(--bg-input) !important;
@@ -571,96 +181,34 @@ div[data-baseweb="input"] > div {
     border-radius: 8px !important;
     color: var(--text-primary) !important;
 }
-
-div[data-baseweb="select"] > div:hover,
-div[data-baseweb="input"] > div:hover {
-    border-color: var(--accent-cyan) !important;
-}
-
 div[data-baseweb="tag"] {
     background: rgba(56, 189, 248, 0.15) !important;
     color: var(--accent-cyan) !important;
     border-radius: 6px !important;
 }
-
 div[data-baseweb="popover"] {
     background: var(--bg-card) !important;
     border: 1px solid var(--border-subtle) !important;
     border-radius: 10px !important;
 }
+div[data-baseweb="popover"] li { color: var(--text-secondary) !important; }
+div[data-baseweb="popover"] li:hover { background: var(--bg-card-hover) !important; color: var(--text-primary) !important; }
 
-div[data-baseweb="popover"] li {
-    color: var(--text-secondary) !important;
-}
+/* Dividers */
+hr, .stDivider, [data-testid="stDivider"] { border-color: var(--border-subtle) !important; opacity: 0.5; }
 
-div[data-baseweb="popover"] li:hover {
-    background: var(--bg-card-hover) !important;
-    color: var(--text-primary) !important;
-}
-
-/* ══════════════════════════════════════════════
-   DIVIDERS
-   ══════════════════════════════════════════════ */
-hr, .stDivider, [data-testid="stDivider"] {
-    border-color: var(--border-subtle) !important;
-    opacity: 0.5;
-}
-
-/* ══════════════════════════════════════════════
-   FEATURE CARDS
-   ══════════════════════════════════════════════ */
+/* Feature cards */
 .feature-card {
     background: var(--bg-card);
     border: 1px solid var(--border-subtle);
     border-radius: 14px;
     padding: 1.6rem;
-    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
 }
+.feature-card .card-icon { font-size: 1.8rem; margin-bottom: 0.8rem; display: block; }
+.feature-card .card-title { color: var(--text-primary) !important; font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem; }
+.feature-card .card-desc { color: var(--text-secondary) !important; font-size: 0.88rem; line-height: 1.6; }
 
-.feature-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
-    opacity: 0;
-    transition: opacity 0.35s ease;
-}
-
-.feature-card:hover {
-    border-color: var(--border-accent);
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-}
-
-.feature-card:hover::before {
-    opacity: 1;
-}
-
-.feature-card .card-icon {
-    font-size: 1.8rem;
-    margin-bottom: 0.8rem;
-    display: block;
-}
-
-.feature-card .card-title {
-    color: var(--text-primary) !important;
-    font-weight: 600;
-    font-size: 1rem;
-    margin-bottom: 0.5rem;
-}
-
-.feature-card .card-desc {
-    color: var(--text-muted) !important;
-    font-size: 0.88rem;
-    line-height: 1.6;
-}
-
-/* ══════════════════════════════════════════════
-   DETECTION TABLE (on landing)
-   ══════════════════════════════════════════════ */
+/* Detection table (landing page) */
 .detect-table {
     width: 100%;
     border-collapse: separate;
@@ -669,9 +217,7 @@ hr, .stDivider, [data-testid="stDivider"] {
     border-radius: 12px;
     overflow: hidden;
     border: 1px solid var(--border-subtle);
-    animation: scaleIn 0.6s ease-out 0.5s both;
 }
-
 .detect-table thead th {
     background: rgba(56, 189, 248, 0.08);
     color: var(--accent-cyan) !important;
@@ -683,96 +229,26 @@ hr, .stDivider, [data-testid="stDivider"] {
     text-align: left;
     border-bottom: 1px solid var(--border-subtle);
 }
-
-.detect-table tbody tr {
-    transition: background 0.2s ease;
-}
-
-.detect-table tbody tr:hover {
-    background: var(--bg-card-hover);
-}
-
 .detect-table tbody td {
     padding: 0.75rem 1.2rem;
     color: var(--text-secondary) !important;
     font-size: 0.9rem;
     border-bottom: 1px solid var(--border-subtle);
-    font-family: 'DM Sans', sans-serif;
 }
+.detect-table tbody tr:last-child td { border-bottom: none; }
+.detect-table .type-cell { color: var(--text-primary) !important; font-weight: 500; }
+.detect-table .original-cell { font-family: 'JetBrains Mono', monospace !important; font-size: 0.82rem; color: var(--accent-rose) !important; }
+.detect-table .masked-cell { font-family: 'JetBrains Mono', monospace !important; font-size: 0.82rem; color: var(--accent-emerald) !important; }
 
-.detect-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-.detect-table .type-cell {
-    color: var(--text-primary) !important;
-    font-weight: 500;
-}
-
-.detect-table .original-cell {
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.82rem;
-    color: var(--accent-rose) !important;
-}
-
-.detect-table .masked-cell {
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.82rem;
-    color: var(--accent-emerald) !important;
-}
-
-/* ══════════════════════════════════════════════
-   CUSTOM MARKDOWN TABLE OVERRIDE
-   ══════════════════════════════════════════════ */
-[data-testid="stMarkdownContainer"] table {
-    background: var(--bg-card) !important;
-    border-radius: 10px;
-    overflow: hidden;
-    width: 100%;
-}
-
-/* Force tables to fit within columns */
-[data-testid="stTable"] {
-    overflow-x: auto !important;
-    max-width: 100% !important;
-}
-
-[data-testid="stTable"] table {
-    font-size: 0.82rem !important;
-}
-
-[data-testid="stMarkdownContainer"] table th {
-    background: rgba(56, 189, 248, 0.08) !important;
-    color: var(--accent-cyan) !important;
-    font-weight: 600 !important;
-    border-bottom: 1px solid var(--border-subtle) !important;
-    padding: 0.8rem 1rem !important;
-}
-
-[data-testid="stMarkdownContainer"] table td {
-    color: var(--text-secondary) !important;
-    border-bottom: 1px solid var(--border-subtle) !important;
-    padding: 0.7rem 1rem !important;
-    background: transparent !important;
-}
-
-[data-testid="stMarkdownContainer"] table tr:hover td {
-    background: var(--bg-card-hover) !important;
-}
-
-/* ══════════════════════════════════════════════
-   FOOTER
-   ══════════════════════════════════════════════ */
+/* Footer */
 .pro-footer {
     text-align: center;
     padding: 2.5rem 0 1rem 0;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     font-size: 0.82rem;
     border-top: 1px solid var(--border-subtle);
     margin-top: 3rem;
-    letter-spacing: 0.3px;
 }
-
 .pro-footer .footer-brand {
     background: linear-gradient(135deg, #38BDF8, #A78BFA);
     -webkit-background-clip: text;
@@ -781,118 +257,39 @@ hr, .stDivider, [data-testid="stDivider"] {
     font-size: 0.9rem;
 }
 
-/* ══════════════════════════════════════════════
-   SPINNERS
-   ══════════════════════════════════════════════ */
-.stSpinner > div {
-    border-top-color: var(--accent-cyan) !important;
-}
+/* Spinners */
+.stSpinner > div { border-top-color: var(--accent-cyan) !important; }
 
-/* ══════════════════════════════════════════════
-   HIDE STREAMLIT CHROME
-   ══════════════════════════════════════════════ */
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
+/* Captions */
+[data-testid="stCaptionContainer"] p, .stCaption { color: var(--text-secondary) !important; font-size: 0.82rem !important; }
 
-/* ══════════════════════════════════════════════
-   CAPTIONS & SMALL TEXT
-   ══════════════════════════════════════════════ */
-[data-testid="stCaptionContainer"] p,
-.stCaption {
-    color: var(--text-muted) !important;
-    font-size: 0.82rem !important;
-}
+/* Hide streamlit chrome */
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
+header { visibility: hidden; }
 
-/* ══════════════════════════════════════════════
-   SCROLLBAR
-   ══════════════════════════════════════════════ */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
+/* Column spacing */
+[data-testid="stHorizontalBlock"] { gap: 1.2rem; }
 
-::-webkit-scrollbar-track {
-    background: var(--bg-primary);
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--text-muted);
-    border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--text-secondary);
-}
-
-/* ══════════════════════════════════════════════
-   COLUMN GAP FIX
-   ══════════════════════════════════════════════ */
-[data-testid="stHorizontalBlock"] {
-    gap: 1.2rem;
-}
-
-/* ══════════════════════════════════════════════
-   RESPONSIVE ANIMATION DELAYS (staggered cards)
-   ══════════════════════════════════════════════ */
-[data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(1) .feature-card {
-    animation: fadeSlideIn 0.5s ease-out 0.2s both;
-}
-[data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(2) .feature-card {
-    animation: fadeSlideIn 0.5s ease-out 0.35s both;
-}
-[data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:nth-child(3) .feature-card {
-    animation: fadeSlideIn 0.5s ease-out 0.5s both;
-}
-
-/* ══════════════════════════════════════════════
-   METRIC / STAT CARDS  (results section)
-   ══════════════════════════════════════════════ */
-.stat-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: 50px;
-    padding: 0.5rem 1.2rem;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    font-weight: 500;
-    transition: all 0.3s ease;
-}
-
-.stat-pill .num {
-    color: var(--accent-cyan);
-    font-weight: 700;
-    font-family: 'JetBrains Mono', monospace;
-}
+/* IMPORTANT: We intentionally do NOT style [data-testid="stDataFrame"].
+   Glide Data Grid renders to <canvas>. Any ancestor transform, animation,
+   opacity forcing, or wildcard color override can cause blank cells.
+   Leave it to Streamlit's default dark theme (configured via
+   .streamlit/config.toml). */
 </style>
-
-<!-- Floating Particles (CSS-only) -->
-<div class="particles-container">
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-</div>
 """, unsafe_allow_html=True)
 
 
 fake_en = Faker('en_GB')
 fake_sv = Faker('sv_SE')
 
+
 # ─────────────────────────────────────────────
 #  NLP — lazy-loaded spaCy models
 # ─────────────────────────────────────────────
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def load_nlp_models():
+    """Load spaCy models for English & Swedish name detection. Cached across reruns."""
     try:
         import spacy
         try:
@@ -914,20 +311,9 @@ def load_nlp_models():
         st.warning(f"Error loading NLP models: {e}")
         return None, None
 
-def detect_lang(text):
-    try:
-        from langdetect import detect
-        result = detect(text)
-        return "sv" if result == "sv" else "en"
-    except Exception:
-        return "en"
-
 
 def mask_names_ner(text, mask_mode, token_counters, lang, nlp_en, nlp_sv, vault):
-    """
-    NLP-based name detection with vault support for referential integrity.
-    Same name encountered twice in the same run → same replacement.
-    """
+    """NLP-based name detection with vault support for referential integrity."""
     if not nlp_en or not nlp_sv:
         return text
     if len(text.strip()) < 2:
@@ -978,8 +364,10 @@ T = {
         "mask_modes": ["Redacted (●●●●●)", "Fake Realistic Data", "Token (e.g. EMAIL_001)"],
         "tip": "💡 **Tip:** 'Fake Realistic Data' keeps your file usable for testing while removing all real personal info.\n\n✨ Person names are auto-detected using AI (spaCy NER) in both English and Swedish.\n\n🔗 Same value always gets the same mask — joins and lookups still work.",
         "upload_label": "Upload your file (.xlsx or .csv)",
-        "upload_help": "Your file never leaves your browser session. Nothing is stored.",
+        # FIX: more honest privacy statement
+        "upload_help": "Files are processed in memory only — nothing is written to disk or logged.",
         "file_loaded": "✅ File loaded: **{name}** — {rows} rows, {cols} columns",
+        "large_file_warning": "⚠️ Large file ({rows:,} rows). Masking may take several minutes, especially with Person Names (NLP) enabled.",
         "choose_cols": "Choose columns to scan",
         "cols_caption": "All columns are scanned by default. Untick any you want to skip.",
         "cols_label": "Columns to scan:",
@@ -987,13 +375,25 @@ T = {
         "run_button": "Run Masking",
         "warn_no_patterns": "Please select at least one pattern to mask.",
         "spinner": "Scanning and masking your data…",
+        "progress_col": "Scanning column: **{col}** ({i}/{n})",
         "done": "✅ Done — **{n}** values masked across your file.",
+        "no_changes": "ℹ️ No sensitive data was detected in the selected columns. Your file appears to be clean already.",
         "original_sample": "🔴 Original",
         "masked_sample": "🟢 Masked",
         "report_expander": "Masking Report — {n} changes",
         "download_header": "Download",
-        "download_button": "⬇️ Download Masked Excel",
+        "download_button": "⬇️ Download Masked Excel (3 tabs)",
+        "download_csv_button": "⬇️ Download Masked CSV only",
+        "download_report_button": "⬇️ Download Report CSV",
         "download_caption": "Contains 3 tabs: Original Data, Masked Data, and Masking Report.",
+        "group_names": "Names",
+        "group_contact": "Contact",
+        "group_financial": "Financial",
+        "group_identifiers": "Identifiers",
+        "group_location": "Location",
+        "group_other": "Other",
+        "select_all": "✓ Select all",
+        "select_none": "✗ Select none",
         "landing_info": "Upload a file to get started →",
         "landing_table_header": "### What does DataMask detect?",
         "landing_table_rows": [
@@ -1013,20 +413,18 @@ T = {
         ],
         "file_error": "Couldn't read that file. Error: {e}",
         "csv_encoding_error": "Couldn't decode this CSV file. Try saving it as UTF-8 or Excel (.xlsx).",
-        "no_changes": "No sensitive data was found in the selected columns.",
-        "download_excel_button": "⬇️ Download Excel (.xlsx)",
-        "download_csv_button": "⬇️ Download CSV",
-        "trust_secure": "End-to-end secure",
+        "trust_secure": "In-memory only",
         "trust_client": "Session-isolated",
         "trust_gdpr": "GDPR compliant",
         "trust_zero": "Zero data stored",
         "why_title": "Why DataMask?",
-        "card_1_title": "Session-Isolated Processing",
-        "card_1_desc": "Your data is processed in memory only. Nothing is persisted to disk.",
+        "card_1_title": "In-Memory Processing",
+        "card_1_desc": "Your data is processed in memory only. Nothing is persisted to disk or logged.",
         "card_2_title": "AI-Powered Detection",
         "card_2_desc": "Advanced NLP recognizes names in English & Swedish automatically.",
         "card_3_title": "Referential Integrity",
         "card_3_desc": "Same value always maps to the same mask — joins and lookups still work.",
+        "pattern_col": "Pattern",
     },
     "sv": {
         "title": "🛡️ DataMask",
@@ -1038,8 +436,9 @@ T = {
         "mask_modes": ["Maskerad (●●●●●)", "Falsk realistisk data", "Token (t.ex. EMAIL_001)"],
         "tip": "💡 **Tips:** 'Falsk realistisk data' håller filen användbar för testning.\n\n✨ Personnamn identifieras automatiskt med AI (spaCy NER) på engelska och svenska.\n\n🔗 Samma värde får alltid samma mask — join och lookups fungerar fortfarande.",
         "upload_label": "Ladda upp din fil (.xlsx eller .csv)",
-        "upload_help": "Din fil lämnar aldrig webbläsaren. Ingenting lagras.",
+        "upload_help": "Filer bearbetas endast i minnet — inget skrivs till disk eller loggas.",
         "file_loaded": "✅ Inläst: **{name}** — {rows} rader, {cols} kolumner",
+        "large_file_warning": "⚠️ Stor fil ({rows:,} rader). Maskering kan ta flera minuter, särskilt med Personnamn (NLP) aktiverat.",
         "choose_cols": "Välj kolumner att skanna",
         "cols_caption": "Alla kolumner skannas som standard. Avmarkera de du vill hoppa över.",
         "cols_label": "Kolumner att skanna:",
@@ -1047,13 +446,25 @@ T = {
         "run_button": "Kör maskering",
         "warn_no_patterns": "Välj minst ett mönster.",
         "spinner": "Skannar och maskerar…",
+        "progress_col": "Skannar kolumn: **{col}** ({i}/{n})",
         "done": "✅ Klart — **{n}** värden maskerades.",
+        "no_changes": "ℹ️ Ingen känslig data hittades i de valda kolumnerna. Filen verkar redan vara ren.",
         "original_sample": "🔴 Original",
         "masked_sample": "🟢 Maskerad",
         "report_expander": "Maskeringsrapport — {n} ändringar",
         "download_header": "Ladda ner",
-        "download_button": "⬇️ Ladda ner maskerad Excel",
+        "download_button": "⬇️ Ladda ner maskerad Excel (3 flikar)",
+        "download_csv_button": "⬇️ Ladda ner bara maskerad CSV",
+        "download_report_button": "⬇️ Ladda ner rapport som CSV",
         "download_caption": "Filen har 3 flikar: Originaldata, Maskerad data och Rapport.",
+        "group_names": "Namn",
+        "group_contact": "Kontakt",
+        "group_financial": "Finansiellt",
+        "group_identifiers": "ID-nummer",
+        "group_location": "Plats",
+        "group_other": "Övrigt",
+        "select_all": "✓ Välj alla",
+        "select_none": "✗ Välj inga",
         "landing_info": "Ladda upp en fil för att börja →",
         "landing_table_header": "### Vad identifierar DataMask?",
         "landing_table_rows": [
@@ -1073,41 +484,43 @@ T = {
         ],
         "file_error": "Kunde inte läsa filen. Fel: {e}",
         "csv_encoding_error": "Kunde inte avkoda CSV-filen. Spara om den som UTF-8 eller Excel (.xlsx).",
-        "no_changes": "Ingen känslig data hittades.",
-        "download_excel_button": "⬇️ Ladda ner Excel (.xlsx)",
-        "download_csv_button": "⬇️ Ladda ner CSV",
-        "trust_secure": "Helkrypterad",
+        "trust_secure": "Endast i minnet",
         "trust_client": "Sessionisolerad",
         "trust_gdpr": "GDPR-kompatibel",
         "trust_zero": "Ingen lagring",
         "why_title": "Varför DataMask?",
-        "card_1_title": "Sessionisolerad bearbetning",
-        "card_1_desc": "Din data bearbetas endast i minnet. Inget sparas till disk.",
+        "card_1_title": "Bearbetning i minnet",
+        "card_1_desc": "Din data bearbetas endast i minnet. Inget sparas till disk eller loggas.",
         "card_2_title": "AI-driven identifiering",
         "card_2_desc": "Avancerad NLP känner igen namn på engelska och svenska automatiskt.",
         "card_3_title": "Referentiell integritet",
         "card_3_desc": "Samma värde får alltid samma mask — join och lookups fungerar fortfarande.",
+        "pattern_col": "Mönster",
     },
 }
 
 
 # ─────────────────────────────────────────────
-#  REGEX PATTERNS — FIX #1 + #2 + #4
-# ─────────────────────────────────────────────
+#  REGEX PATTERNS
 #  Order matters: most-specific → most-general.
-#  Credit Card, Personnummer, NI, IP, UK Postcode all run BEFORE
-#  Swedish Postcodes (which is the broadest digit pattern) to prevent
-#  collisions like "4111 1111 1111 1111" being fragmented by the
-#  postcode pattern. Swedish Postcodes is now tightened to require
-#  a real space + word boundaries so it won't match random 5-digit
-#  numbers (order IDs, SKUs, zip codes, etc.).
+# ─────────────────────────────────────────────
 PATTERNS = {
     "Person Names (NLP)":     None,
-    "Email Addresses":        r'[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+',
+
+    # FIX #1 — Email regex now supports Unicode word characters (å ä ö etc.)
+    # via \w which in Python 3 re matches Unicode letters by default.
+    # The old pattern [a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+ silently
+    # skipped Swedish emails like 'åsa@företag.se'.
+    "Email Addresses":        r'[\w.+\-]+@[\w\-]+\.[\w.\-]+',
+
     "Credit Card Numbers":    r'\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}',
     "Swedish Personnummer":   r'\b(?:19|20)?\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])[-\s]?\d{4}\b',
     "National Insurance":     r'\b[A-Z]{2}\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-Z]\b',
-    "IP Addresses":           r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b',
+
+    # FIX #2 — IP regex now validates each octet is 0-255, so random version
+    # strings like 'v1.2.3.4' and '999.999.999.999' are no longer matched.
+    "IP Addresses":           r'\b(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}\b',
+
     "UK Postcodes":           r'(?i:\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b)',
     "UK Phone Numbers":       r'(?:\+44\s?|0)7\d{3}[\s-]?\d{3}[\s-]?\d{3}|(?:\+44\s?|0)7\d{3}[\s-]?\d{6}',
     "Swedish Phone Numbers":  r'(?:\+46[\s-]?|0)7[0-9][\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}',
@@ -1115,7 +528,11 @@ PATTERNS = {
     "Dates of Birth":         r'\b\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b',
     "Salary / Currency":      r'[£€$]\s?\d{1,3}(?:[,\s]\d{3})*(?:\.\d{2})?',
     "SEK Currency":           r'\d{1,3}(?:\s\d{3})+\s*kr',
-    "Swedish Postcodes":      r'\b\d{3}\s\d{2}\b',
+
+    # FIX #3 — Swedish postcodes: first digit 1-9 (no leading 0)
+    # Reduces false positives on SKUs/IDs a bit (can't eliminate entirely
+    # without context — '113 45' is genuinely ambiguous in isolation).
+    "Swedish Postcodes":      r'\b[1-9]\d{2}\s\d{2}\b',
 }
 
 PATTERN_LANG = {k: "both" for k in PATTERNS}
@@ -1153,6 +570,15 @@ PATTERN_LABELS = {
         "Salary / Currency":     "Lön / Valuta (£€$)",
         "SEK Currency":          "SEK-belopp (kr)",
     },
+}
+
+# Pattern groupings for cleaner sidebar layout
+PATTERN_GROUPS = {
+    "group_names":       ["Person Names (NLP)"],
+    "group_contact":     ["Email Addresses", "UK Phone Numbers", "US Phone Numbers", "Swedish Phone Numbers"],
+    "group_financial":   ["Salary / Currency", "SEK Currency", "Credit Card Numbers"],
+    "group_identifiers": ["Swedish Personnummer", "National Insurance", "Dates of Birth"],
+    "group_location":    ["UK Postcodes", "Swedish Postcodes", "IP Addresses"],
 }
 
 
@@ -1201,22 +627,22 @@ def replace_with_fake(category, lang):
 
 
 # ─────────────────────────────────────────────
-#  CORE MASKING LOGIC — FIX #3 (vault for referential integrity)
+#  CORE MASKING LOGIC
 # ─────────────────────────────────────────────
 def _clean_token_key(category):
-    """Convert category name to a clean TOKEN key (e.g. 'Salary / Currency' → 'SALARY_CURRENCY')."""
+    """Convert category name to a clean TOKEN key."""
     key = re.sub(r'[^A-Za-z0-9]+', '_', category).strip('_').upper()
     return key
 
 
 def mask_cell(value, selected_patterns, mask_mode, token_counters, lang, vault,
-              use_nlp=False, nlp_lang="auto", nlp_en=None, nlp_sv=None):
+              nlp_en=None, nlp_sv=None, category_hits=None):
     """
     Mask sensitive data in a single cell value.
 
     vault : dict — maps (category, original_string) → replacement_string.
-                   Ensures the same input always produces the same output
-                   across the whole run (referential integrity).
+                   Ensures the same input always produces the same output.
+    category_hits : optional dict — if provided, records which categories matched.
     """
     text = str(value)
     use_nlp_for_names = "Person Names (NLP)" in selected_patterns
@@ -1230,7 +656,8 @@ def mask_cell(value, selected_patterns, mask_mode, token_counters, lang, vault,
         def replace_match(m, c=category):
             original = m.group()
             key = (c, original)
-            # Vault lookup: same original → same replacement
+            if category_hits is not None:
+                category_hits[original] = c
             if key in vault:
                 return vault[key]
 
@@ -1249,53 +676,65 @@ def mask_cell(value, selected_patterns, mask_mode, token_counters, lang, vault,
         text = re.sub(pattern, replace_match, text)
 
     if use_nlp_for_names and nlp_en and nlp_sv:
+        before = text
         text = mask_names_ner(text, mask_mode, token_counters, lang, nlp_en, nlp_sv, vault)
+        if category_hits is not None and text != before:
+            category_hits["__nlp__"] = "Person Names (NLP)"
 
     return text
 
 
 def process_dataframe(df, selected_patterns, mask_mode, selected_columns, lang,
-                      use_nlp=False, nlp_lang="auto"):
+                      progress_callback=None):
+    """Main masking loop. Calls progress_callback(i, n, col) per column."""
     masked_df = df.copy()
     token_counters = {}
-    vault = {}  # FIX #3: referential integrity across the whole document
+    vault = {}
     report = []
 
     nlp_en, nlp_sv = (None, None)
     if "Person Names (NLP)" in selected_patterns:
         nlp_en, nlp_sv = load_nlp_models()
 
-    cols_to_process = selected_columns if selected_columns else df.columns.tolist()
+    cols_to_process = [c for c in (selected_columns or df.columns.tolist()) if c in df.columns]
+    n = len(cols_to_process)
 
-    for col in cols_to_process:
-        if col not in df.columns:
-            continue
+    for i, col in enumerate(cols_to_process):
+        if progress_callback:
+            progress_callback(i, n, col)
+
         for idx, value in df[col].items():
             if pd.isna(value):
                 continue
             original = str(value)
+            category_hits = {}
             cleaned = mask_cell(
                 original, selected_patterns, mask_mode, token_counters, lang,
-                vault=vault, use_nlp=True, nlp_lang=nlp_lang,
-                nlp_en=nlp_en, nlp_sv=nlp_sv
+                vault=vault, nlp_en=nlp_en, nlp_sv=nlp_sv, category_hits=category_hits,
             )
             if cleaned != original:
                 masked_df.at[idx, col] = cleaned
+                # Best-effort: first category that matched (or __nlp__)
+                pattern_label = next(iter(category_hits.values()), "—")
                 report.append({
                     "Row": idx + 2,
                     "Column": col,
+                    "Pattern": pattern_label,
                     "Original": original,
                     "Masked As": cleaned,
                 })
+
+    if progress_callback:
+        progress_callback(n, n, "")
 
     return masked_df, pd.DataFrame(report)
 
 
 # ─────────────────────────────────────────────
-#  CSV LOADER — FIX #4b (encoding fallback)
+#  CSV LOADER (encoding fallback)
 # ─────────────────────────────────────────────
 def load_csv_with_fallback(uploaded_file):
-    """Try common encodings in order. Raises ValueError if none work."""
+    """Try common encodings in order."""
     encodings = ("utf-8", "utf-8-sig", "cp1252", "iso-8859-1", "latin-1")
     last_err = None
     for enc in encodings:
@@ -1309,7 +748,7 @@ def load_csv_with_fallback(uploaded_file):
 
 
 # ─────────────────────────────────────────────
-#  EXPORT TO EXCEL
+#  EXPORT HELPERS
 # ─────────────────────────────────────────────
 def export_to_excel(original_df, masked_df, report_df):
     output = io.BytesIO()
@@ -1330,18 +769,20 @@ def export_to_excel(original_df, masked_df, report_df):
     return output
 
 
+def export_to_csv(df):
+    return df.to_csv(index=False).encode('utf-8-sig')
+
+
 # ═════════════════════════════════════════════
 #  UI — STREAMLIT INTERFACE
 # ═════════════════════════════════════════════
 
-if 'masked_df' not in st.session_state:
-    st.session_state.masked_df = None
-if 'report_df' not in st.session_state:
-    st.session_state.report_df = None
-if 'original_df' not in st.session_state:
-    st.session_state.original_df = None
+# Session state init
+for key in ('masked_df', 'report_df', 'original_df', 'last_uploaded_name'):
+    if key not in st.session_state:
+        st.session_state[key] = None
 
-# ── Sidebar ──────────────────────────────────
+# ── Sidebar: language selector ──────────────
 with st.sidebar:
     lang = st.radio(
         "Language / Språk",
@@ -1355,16 +796,34 @@ with st.sidebar:
 ui = T[lang]
 labels = PATTERN_LABELS[lang]
 
+# ── Sidebar: settings ───────────────────────
 with st.sidebar:
     st.header(ui["settings"])
-
     st.subheader(ui["what_to_mask"])
+
+    # Quick select/deselect buttons
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button(ui["select_all"], use_container_width=True, key="btn_select_all"):
+            for cat in PATTERNS:
+                st.session_state[f"chk_{cat}"] = True
+            st.rerun()
+    with col_b:
+        if st.button(ui["select_none"], use_container_width=True, key="btn_select_none"):
+            for cat in PATTERNS:
+                st.session_state[f"chk_{cat}"] = False
+            st.rerun()
+
     selected_patterns = []
-    for category in PATTERNS:
-        if PATTERN_LANG[category] not in (lang, "both"):
-            continue
-        if st.checkbox(labels[category], value=True, key=f"chk_{category}"):
-            selected_patterns.append(category)
+    # Grouped checkboxes
+    for group_key, categories in PATTERN_GROUPS.items():
+        st.markdown(f'<span class="group-label">{ui[group_key]}</span>', unsafe_allow_html=True)
+        for category in categories:
+            if category not in PATTERNS:
+                continue
+            default_val = st.session_state.get(f"chk_{category}", True)
+            if st.checkbox(labels[category], value=default_val, key=f"chk_{category}"):
+                selected_patterns.append(category)
 
     st.subheader(ui["masking_style"])
     mask_mode = st.radio(
@@ -1374,16 +833,16 @@ with st.sidebar:
         key="mask_mode_radio"
     )
 
-    if 'previous_mask_mode' not in st.session_state:
-        st.session_state.previous_mask_mode = mask_mode
-    elif st.session_state.previous_mask_mode != mask_mode:
+    # FIX #4 — Compare by INDEX, not by localized string, so switching
+    # languages doesn't wipe the user's results.
+    current_mode_idx = ui["mask_modes"].index(mask_mode)
+    if st.session_state.get('previous_mode_idx') is None:
+        st.session_state.previous_mode_idx = current_mode_idx
+    elif st.session_state.previous_mode_idx != current_mode_idx:
         st.session_state.masked_df = None
         st.session_state.report_df = None
         st.session_state.original_df = None
-        st.session_state.previous_mask_mode = mask_mode
-
-    st.divider()
-    st.caption(ui["tip"])
+        st.session_state.previous_mode_idx = current_mode_idx
 
 
 # ── Hero Header ──────────────────────────────
@@ -1410,9 +869,15 @@ uploaded_file = st.file_uploader(
 )
 
 if uploaded_file:
+    # Clear results if a different file is uploaded
+    if st.session_state.last_uploaded_name != uploaded_file.name:
+        st.session_state.masked_df = None
+        st.session_state.report_df = None
+        st.session_state.original_df = None
+        st.session_state.last_uploaded_name = uploaded_file.name
+
     try:
-        if uploaded_file.name.endswith(".csv"):
-            # FIX #4b: try multiple encodings (Swedish CSVs are often cp1252/latin-1)
+        if uploaded_file.name.lower().endswith(".csv"):
             try:
                 df = load_csv_with_fallback(uploaded_file)
             except ValueError:
@@ -1425,6 +890,10 @@ if uploaded_file:
         st.stop()
 
     st.success(ui["file_loaded"].format(name=uploaded_file.name, rows=len(df), cols=len(df.columns)))
+
+    if len(df) > 20_000:
+        st.warning(ui["large_file_warning"].format(rows=len(df)))
+
     st.divider()
 
     st.subheader(ui["choose_cols"])
@@ -1436,8 +905,9 @@ if uploaded_file:
         default=all_cols,
     )
 
+    # FIX #5 — Use st.dataframe for previews (scrollable, sortable, resizable)
     with st.expander(ui["preview_label"], expanded=False):
-        st.table(df.head(10))
+        st.dataframe(df.head(10), use_container_width=True, hide_index=True)
 
     st.divider()
 
@@ -1445,53 +915,96 @@ if uploaded_file:
         if not selected_patterns:
             st.warning(ui["warn_no_patterns"])
         else:
+            # Pre-load NLP models with a clear spinner
             if "Person Names (NLP)" in selected_patterns:
-                with st.spinner("Loading AI models…"):
+                with st.spinner("Loading AI models…" if lang == "en" else "Laddar AI-modeller…"):
                     nlp_en, nlp_sv = load_nlp_models()
                     if not nlp_en or not nlp_sv:
                         st.error("⚠️ NLP models not available. Person names won't be masked.")
 
-            with st.spinner(ui["spinner"]):
-                st.session_state.masked_df, st.session_state.report_df = process_dataframe(
-                    df, selected_patterns, mask_mode, selected_columns, lang,
-                    use_nlp=True, nlp_lang="auto"
-                )
-                st.session_state.original_df = df
+            # FIX #6 — Real progress bar per column instead of indefinite spinner
+            progress_bar = st.progress(0.0, text=ui["spinner"])
+
+            def update_progress(i, n, col):
+                frac = i / n if n else 1.0
+                text = ui["progress_col"].format(col=col, i=i, n=n) if col else ui["spinner"]
+                progress_bar.progress(frac, text=text)
+
+            masked_df, report_df = process_dataframe(
+                df, selected_patterns, mask_mode, selected_columns, lang,
+                progress_callback=update_progress,
+            )
+            progress_bar.empty()
+
+            st.session_state.masked_df = masked_df
+            st.session_state.report_df = report_df
+            st.session_state.original_df = df
 
     # ── Results ──────────────────────────────
     if st.session_state.masked_df is not None:
-        st.success(ui["done"].format(n=len(st.session_state.report_df)))
+        n_changes = len(st.session_state.report_df)
+        if n_changes == 0:
+            st.info(ui["no_changes"])
+        else:
+            st.success(ui["done"].format(n=n_changes))
         st.divider()
 
         col1, col2 = st.columns(2)
         with col1:
             st.subheader(ui["original_sample"])
-            st.table(st.session_state.original_df.head(10))
+            st.dataframe(st.session_state.original_df.head(10),
+                         use_container_width=True, hide_index=True)
         with col2:
             st.subheader(ui["masked_sample"])
-            st.table(st.session_state.masked_df.head(10))
+            st.dataframe(st.session_state.masked_df.head(10),
+                         use_container_width=True, hide_index=True)
 
         if not st.session_state.report_df.empty:
             with st.expander(ui["report_expander"].format(n=len(st.session_state.report_df))):
-                st.table(st.session_state.report_df.head(50))
+                st.dataframe(
+                    st.session_state.report_df.head(200),
+                    use_container_width=True, hide_index=True,
+                )
 
         st.divider()
         st.subheader(ui["download_header"])
+
+        original_name = uploaded_file.name.rsplit('.', 1)[0]
         excel_output = export_to_excel(
             st.session_state.original_df,
             st.session_state.masked_df,
-            st.session_state.report_df
+            st.session_state.report_df,
         )
-        original_name = uploaded_file.name.replace('.xlsx', '').replace('.csv', '')
 
-        st.download_button(
-            label=ui["download_button"],
-            data=excel_output,
-            file_name=f"{original_name}_MASKED.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
-            type="primary",
-        )
+        # FIX #7 — Multiple download formats (Excel + CSV + report-only)
+        dl_col1, dl_col2, dl_col3 = st.columns(3)
+        with dl_col1:
+            st.download_button(
+                label=ui["download_button"],
+                data=excel_output,
+                file_name=f"{original_name}_MASKED.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                type="primary",
+            )
+        with dl_col2:
+            st.download_button(
+                label=ui["download_csv_button"],
+                data=export_to_csv(st.session_state.masked_df),
+                file_name=f"{original_name}_MASKED.csv",
+                mime="text/csv",
+                use_container_width=True,
+            )
+        with dl_col3:
+            if not st.session_state.report_df.empty:
+                st.download_button(
+                    label=ui["download_report_button"],
+                    data=export_to_csv(st.session_state.report_df),
+                    file_name=f"{original_name}_REPORT.csv",
+                    mime="text/csv",
+                    use_container_width=True,
+                )
+
         st.caption(ui["download_caption"])
 
 else:
@@ -1529,7 +1042,6 @@ else:
 
     rows = ui["landing_table_rows"]
 
-    # Build an HTML table for much better styling control
     th_type = "Type" if lang == "en" else "Typ"
     th_example = "Example" if lang == "en" else "Exempel"
     th_masked = "Masked As" if lang == "en" else "Maskeras som"
@@ -1542,7 +1054,7 @@ else:
     </tr></thead><tbody>'''
 
     token_counters_demo = {}
-    vault_demo = {}  # FIX #3: vault for landing-page demo too
+    vault_demo = {}
     for label, example, _, row_lang in rows:
         if row_lang in (lang, "both"):
             category = label_to_category.get(label)
@@ -1558,7 +1070,7 @@ else:
             elif category and category in PATTERNS:
                 masked_example = mask_cell(
                     example, [category], mask_mode, token_counters_demo, lang,
-                    vault=vault_demo
+                    vault=vault_demo,
                 )
             else:
                 masked_example = example

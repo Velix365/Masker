@@ -123,26 +123,52 @@ p, li, label { color: var(--text-secondary) !important; }
     font-weight: 600 !important;
     border-radius: 10px !important;
     padding: 0.65rem 2rem !important;
-    border: none !important;
+    border: 1px solid var(--border-subtle) !important;
+    background: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
 }
+.stButton > button:hover {
+    background: var(--bg-card-hover) !important;
+    border-color: rgba(255,255,255,0.12) !important;
+}
+
+/* Primary (Run Masking) — muted cyan with readable light text */
 .stButton > button[kind="primary"],
 .stButton > button[data-testid="stBaseButton-primary"] {
-    background: linear-gradient(135deg, #38BDF8, #0EA5E9) !important;
-    color: #0B0F19 !important;
-    font-weight: 700 !important;
+    background: rgba(56, 189, 248, 0.12) !important;
+    color: #BAE6FD !important;
+    border: 1px solid rgba(56, 189, 248, 0.35) !important;
+    font-weight: 600 !important;
 }
+.stButton > button[kind="primary"]:hover,
+.stButton > button[data-testid="stBaseButton-primary"]:hover {
+    background: rgba(56, 189, 248, 0.2) !important;
+    border-color: rgba(56, 189, 248, 0.6) !important;
+    color: #E0F2FE !important;
+}
+
 .stButton > button[kind="secondary"],
 .stButton > button[data-testid="stBaseButton-secondary"] {
     background: var(--bg-card) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--border-subtle) !important;
 }
+
+/* Download — muted emerald with readable light text */
 .stDownloadButton > button {
-    background: linear-gradient(135deg, #34D399, #10B981) !important;
-    color: #0B0F19 !important;
-    font-weight: 700 !important;
+    background: rgba(52, 211, 153, 0.12) !important;
+    color: #A7F3D0 !important;
+    border: 1px solid rgba(52, 211, 153, 0.35) !important;
+    font-weight: 600 !important;
     border-radius: 10px !important;
-    border: none !important;
+    padding: 0.65rem 2rem !important;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
+}
+.stDownloadButton > button:hover {
+    background: rgba(52, 211, 153, 0.2) !important;
+    border-color: rgba(52, 211, 153, 0.6) !important;
+    color: #D1FAE5 !important;
 }
 
 /* File uploader */
@@ -348,6 +374,75 @@ def mask_names_ner(text, mask_mode, token_counters, lang, nlp_en, nlp_sv, vault)
         result = result[:start] + replacement + result[end:]
 
     return result
+
+
+# ─────────────────────────────────────────────
+#  NAME FALLBACK — for cases where spaCy NER misses
+#  (e.g. standalone name cells with no sentence context)
+# ─────────────────────────────────────────────
+NAME_COLUMN_HINTS = {
+    # English
+    "name", "full name", "fullname", "first name", "firstname",
+    "last name", "lastname", "surname", "person name", "person",
+    "customer", "customer name", "customername",
+    "employee", "employee name", "employeename",
+    "contact", "contact name", "contactname",
+    "client", "client name", "clientname",
+    "user", "user name", "username",
+    # Swedish
+    "namn", "fullständigt namn", "fullständigtnamn",
+    "förnamn", "efternamn", "personnamn",
+    "kund", "kundnamn", "anställd", "anställdnamn",
+    "kontakt", "kontaktnamn", "användare",
+}
+
+_NAME_WORD = r"[A-ZÅÄÖÆØÉÜ][a-zåäöæøéüß]*(?:['’\-][A-ZÅÄÖÆØÉÜ][a-zåäöæøéüß]+)?"
+_NAME_PARTICLE = r"(?:von|van|de|af|der|den|la|di|el|le|du|da)"
+_NAME_CELL_RE = re.compile(rf"^{_NAME_WORD}(?:\s+(?:{_NAME_WORD}|{_NAME_PARTICLE}))+$")
+
+
+def looks_like_name_column(col_name):
+    """Return True if column header looks like a name column (EN or SV)."""
+    if col_name is None:
+        return False
+    s = str(col_name).strip().lower()
+    s = re.sub(r"[_\-]+", " ", s)
+    s = re.sub(r"\s+", " ", s)
+    return s in NAME_COLUMN_HINTS
+
+
+def looks_like_name_cell(value):
+    """Return True if value looks like a 2-4-word human name (EN/Nordic)."""
+    if value is None:
+        return False
+    s = str(value).strip()
+    if len(s) < 3 or len(s) > 80:
+        return False
+    # reject strings that are all single letters (initials like 'A B', 'J K')
+    parts = s.split()
+    if all(len(p.replace("-", "").replace("'", "").replace("’", "")) <= 1 for p in parts):
+        return False
+    return bool(_NAME_CELL_RE.match(s))
+
+
+def mask_name_fallback(original, mask_mode, token_counters, lang, vault):
+    """Return masked replacement for a name that NER missed, using the vault
+    so a repeated name gets the same replacement as an NER-detected one."""
+    key = ("PERSON", original)
+    if key in vault:
+        return vault[key]
+
+    if mask_mode in ("Redacted (●●●●●)", "Maskerad (●●●●●)"):
+        replacement = '●' * len(original)
+    elif mask_mode in ("Fake Realistic Data", "Falsk realistisk data"):
+        fake = fake_sv if any(c in original.lower() for c in ['å', 'ä', 'ö']) else fake_en
+        replacement = fake.name()
+    else:
+        token_counters["PERSON"] = token_counters.get("PERSON", 0) + 1
+        replacement = f"PERSON_{token_counters['PERSON']:03d}"
+
+    vault[key] = replacement
+    return replacement
 
 
 # ─────────────────────────────────────────────
@@ -699,9 +794,13 @@ def process_dataframe(df, selected_patterns, mask_mode, selected_columns, lang,
     cols_to_process = [c for c in (selected_columns or df.columns.tolist()) if c in df.columns]
     n = len(cols_to_process)
 
+    use_person_names = "Person Names (NLP)" in selected_patterns
+
     for i, col in enumerate(cols_to_process):
         if progress_callback:
             progress_callback(i, n, col)
+
+        is_name_col = use_person_names and looks_like_name_column(col)
 
         for idx, value in df[col].items():
             if pd.isna(value):
@@ -712,6 +811,14 @@ def process_dataframe(df, selected_patterns, mask_mode, selected_columns, lang,
                 original, selected_patterns, mask_mode, token_counters, lang,
                 vault=vault, nlp_en=nlp_en, nlp_sv=nlp_sv, category_hits=category_hits,
             )
+
+            # Name-column fallback: if the column is clearly a name column
+            # and NLP didn't touch it, try the heuristic.
+            if is_name_col and cleaned == original and looks_like_name_cell(original):
+                cleaned = mask_name_fallback(original, mask_mode, token_counters, lang, vault)
+                if cleaned != original:
+                    category_hits["__fallback__"] = "Person Names (heuristic)"
+
             if cleaned != original:
                 masked_df.at[idx, col] = cleaned
                 # Best-effort: first category that matched (or __nlp__)

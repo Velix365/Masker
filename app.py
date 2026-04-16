@@ -223,16 +223,57 @@ div[data-baseweb="popover"] li:hover { background: var(--bg-card-hover) !importa
 /* Dividers */
 hr, .stDivider, [data-testid="stDivider"] { border-color: var(--border-subtle) !important; opacity: 0.5; }
 
-/* Feature cards */
+/* Feature cards — with hover lift + cyan top-border glow.
+   Safe: feature cards are never ancestors of st.dataframe, so transforms
+   here cannot affect the Glide canvas. */
 .feature-card {
     background: var(--bg-card);
     border: 1px solid var(--border-subtle);
     border-radius: 14px;
     padding: 1.6rem;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.35s ease,
+                box-shadow 0.35s ease;
+    position: relative;
+    overflow: hidden;
 }
-.feature-card .card-icon { font-size: 1.8rem; margin-bottom: 0.8rem; display: block; }
-.feature-card .card-title { color: var(--text-primary) !important; font-weight: 600; font-size: 1rem; margin-bottom: 0.5rem; }
-.feature-card .card-desc { color: var(--text-secondary) !important; font-size: 0.88rem; line-height: 1.6; }
+.feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+}
+.feature-card:hover {
+    border-color: var(--border-accent);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+}
+.feature-card:hover::before {
+    opacity: 1;
+}
+.feature-card .card-icon {
+    font-size: 1.8rem;
+    margin-bottom: 0.8rem;
+    display: block;
+    /* Force color-emoji fonts so the glyphs render in color rather than
+       as monochrome system outlines. */
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji',
+                 'EmojiOne Color', 'Android Emoji', sans-serif;
+}
+.feature-card .card-title {
+    color: var(--text-primary) !important;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+.feature-card .card-desc {
+    color: var(--text-secondary) !important;
+    font-size: 0.88rem;
+    line-height: 1.6;
+}
 
 /* Detection table (landing page) */
 .detect-table {

@@ -451,10 +451,10 @@ p, li, label {
 /* ══════════════════════════════════════════════
    DATA TABLES & DATAFRAMES — DARK THEME FIX
    ══════════════════════════════════════════════ */
-[data-testid="stDataFrame"],
-.stDataFrame {
-    animation: scaleIn 0.5s ease-out;
-}
+/* NOTE: No entrance animation on st.dataframe. Glide Data Grid uses
+   ResizeObserver to size its canvas; if an ancestor has `transform: scale(...)`
+   mid-animation, Glide measures the scaled-down size and paints the canvas
+   blank or cropped. Keep dataframes free of transform/animation. */
 
 [data-testid="stDataFrame"] [data-testid="glideDataEditor"],
 .dvn-scroller {
